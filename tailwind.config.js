@@ -16,7 +16,7 @@ export default {
       },
       fontFamily: {
         serif: ['"DM Serif Display"', '"Cormorant Garamond"', 'Georgia', 'serif'],
-        sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+        sans: ['"Plus Jakarta Sans"', '"Be Vietnam Pro"', 'sans-serif'],
       },
       boxShadow: {
         'glow-cyan': '0 0 25px rgba(112, 215, 255, 0.45)',

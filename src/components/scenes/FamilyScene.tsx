@@ -20,7 +20,7 @@ export const FamilyScene: React.FC<FamilySceneProps> = ({ onOpenRegister }) => {
     <section
       id="family"
       ref={sceneRef}
-      className="relative w-full min-h-screen lg:min-h-[108vh] lg:h-auto py-24 lg:py-32 overflow-visible select-none bg-transparent"
+      className="relative w-full min-h-0 lg:min-h-[108vh] lg:h-auto py-10 sm:py-16 lg:py-32 overflow-visible select-none bg-transparent"
     >
       {/* LAYER 1: Deep Blue Concert Stage / Backstage Continuity Background */}
       <div
@@ -97,10 +97,10 @@ export const FamilyScene: React.FC<FamilySceneProps> = ({ onOpenRegister }) => {
               </span>
             </div>
 
-            {/* 2. HEADING (2 Lines, Left Aligned, serif clamp(46px, 4vw, 68px)) */}
+            {/* 2. HEADING (2 Lines, Left Aligned) */}
             <h2
-              className="font-serif-display text-white tracking-tight leading-[1.02] drop-shadow-[0_4px_30px_rgba(0,0,0,0.9)] mb-3"
-              style={{ fontSize: 'clamp(46px, 3.8vw, 64px)' }}
+              className="font-sans font-extrabold text-white tracking-tight leading-[1.05] drop-shadow-[0_4px_30px_rgba(0,0,0,0.9)] mb-3"
+              style={{ fontSize: 'clamp(42px, 3.8vw, 60px)' }}
             >
               <span className="block text-white">HƯỚNG DẪN</span>
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#70D7FF] via-[#398BFF] to-[#70D7FF] glow-text-cyan">
@@ -305,7 +305,7 @@ export const FamilyScene: React.FC<FamilySceneProps> = ({ onOpenRegister }) => {
         </div>
 
         {/* Heading */}
-        <h2 className="font-serif-display text-3xl sm:text-4xl text-white tracking-tight leading-tight mb-2">
+        <h2 className="font-sans font-extrabold text-3xl sm:text-4xl text-white tracking-tight leading-tight mb-2">
           <span>HƯỚNG DẪN </span>
           <span className="text-[#70D7FF]">THAM GIA CASTING</span>
         </h2>

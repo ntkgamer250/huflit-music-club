@@ -199,7 +199,7 @@ export const ContactScene: React.FC<ContactSceneProps> = ({ showReferenceOverlay
               </div>
 
               {/* Heading */}
-              <h2 className="font-serif-display text-4xl sm:text-5xl lg:text-6xl text-white tracking-tight leading-[1.08] mb-4">
+              <h2 className="font-sans font-extrabold text-3xl sm:text-5xl lg:text-[56px] text-white tracking-tight leading-[1.1] mb-3 sm:mb-4">
                 <span>LIÊN HỆ </span>
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#70D7FF] via-[#398BFF] to-[#70D7FF] glow-text-cyan">
                   VỚI CHÚNG MÌNH
@@ -207,7 +207,7 @@ export const ContactScene: React.FC<ContactSceneProps> = ({ showReferenceOverlay
               </h2>
 
               {/* Description */}
-              <p className="font-sans text-sm sm:text-base text-[#91A4BB] leading-relaxed mb-8 max-w-lg">
+              <p className="font-sans text-sm sm:text-base text-[#91A4BB] leading-relaxed mb-6 sm:mb-8 max-w-lg">
                 Nếu bạn có bất kỳ câu hỏi nào, muốn hợp tác, tham gia sự kiện hoặc đơn giản là muốn chia sẻ niềm yêu âm nhạc, đừng ngần ngại liên hệ với chúng mình nhé!
               </p>
             </div>
@@ -218,13 +218,13 @@ export const ContactScene: React.FC<ContactSceneProps> = ({ showReferenceOverlay
               <a
                 href={`mailto:${clubData.email}`}
                 onMouseEnter={() => sound.playHover()}
-                className="glass-panel p-3.5 sm:p-4 rounded-2xl flex items-center gap-4 hover:border-[#70D7FF]/60 hover:bg-[#0E2A4D]/60 transition-all group cursor-pointer block"
+                className="glass-panel p-3.5 sm:p-4 rounded-2xl flex items-center gap-3.5 sm:gap-4 hover:border-[#70D7FF]/60 hover:bg-[#0E2A4D]/60 transition-all group cursor-pointer block"
               >
-                <div className="w-11 h-11 rounded-xl bg-[#0E2A4D] border border-[#70D7FF]/30 flex items-center justify-center text-[#70D7FF] group-hover:scale-110 group-hover:shadow-[0_0_15px_rgba(112,215,255,0.4)] transition-all shrink-0">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#0E2A4D] border border-[#70D7FF]/30 flex items-center justify-center text-[#70D7FF] group-hover:scale-110 group-hover:shadow-[0_0_15px_rgba(112,215,255,0.4)] transition-all shrink-0">
                   <Mail className="w-5 h-5" />
                 </div>
                 <div className="overflow-hidden">
-                  <p className="text-[11px] text-[#91A4BB] uppercase tracking-wider font-semibold">Email</p>
+                  <p className="text-[10px] sm:text-[11px] text-[#91A4BB] uppercase tracking-wider font-semibold">Email</p>
                   <p className="text-xs sm:text-sm text-white font-medium truncate group-hover:text-[#70D7FF] transition-colors">
                     {clubData.email}
                   </p>
@@ -232,12 +232,12 @@ export const ContactScene: React.FC<ContactSceneProps> = ({ showReferenceOverlay
               </a>
 
               {/* Location */}
-              <div className="glass-panel p-3.5 sm:p-4 rounded-2xl flex items-center gap-4">
-                <div className="w-11 h-11 rounded-xl bg-[#0E2A4D] border border-[#70D7FF]/30 flex items-center justify-center text-[#70D7FF] shrink-0">
+              <div className="glass-panel p-3.5 sm:p-4 rounded-2xl flex items-center gap-3.5 sm:gap-4">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#0E2A4D] border border-[#70D7FF]/30 flex items-center justify-center text-[#70D7FF] shrink-0">
                   <MapPin className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-[11px] text-[#91A4BB] uppercase tracking-wider font-semibold">Địa điểm sinh hoạt</p>
+                  <p className="text-[10px] sm:text-[11px] text-[#91A4BB] uppercase tracking-wider font-semibold">Địa điểm sinh hoạt</p>
                   <p className="text-xs sm:text-sm text-white font-medium leading-tight">
                     {clubData.location}
                   </p>
@@ -248,29 +248,29 @@ export const ContactScene: React.FC<ContactSceneProps> = ({ showReferenceOverlay
 
           {/* RIGHT AREA: Message Form (~40-45% width) */}
           <div className="contact-right-col lg:col-span-7 w-full flex justify-end">
-            <div className="contact-form w-full max-w-lg glass-panel p-6 sm:p-8 rounded-3xl relative overflow-hidden">
+            <div className="contact-form w-full max-w-lg glass-panel p-5 sm:p-8 rounded-2xl sm:rounded-3xl relative overflow-hidden">
               {/* Form Ambient Top Glow Accent */}
               <div className="absolute top-0 right-0 w-48 h-48 bg-[#398BFF]/10 rounded-full blur-2xl pointer-events-none" />
 
-              <h3 className="font-serif-display text-xl sm:text-2xl text-white font-semibold mb-6 flex items-center gap-2">
+              <h3 className="font-sans font-bold text-lg sm:text-2xl text-white mb-5 sm:mb-6 flex items-center gap-2">
                 <span>Gửi lời nhắn</span>
                 <span className="w-2 h-2 rounded-full bg-[#70D7FF] animate-pulse" />
               </h3>
 
               {isSubmitted ? (
-                <div className="py-12 flex flex-col items-center justify-center text-center space-y-4">
-                  <div className="w-16 h-16 rounded-full bg-[#70D7FF]/20 border border-[#70D7FF] flex items-center justify-center text-[#70D7FF] shadow-[0_0_25px_rgba(112,215,255,0.5)]">
-                    <CheckCircle2 className="w-8 h-8" />
+                <div className="py-10 sm:py-12 flex flex-col items-center justify-center text-center space-y-4">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#70D7FF]/20 border border-[#70D7FF] flex items-center justify-center text-[#70D7FF] shadow-[0_0_25px_rgba(112,215,255,0.5)]">
+                    <CheckCircle2 className="w-7 h-7 sm:w-8 sm:h-8" />
                   </div>
-                  <h4 className="font-serif-display text-xl text-white font-semibold">Cảm ơn bạn đã liên hệ!</h4>
-                  <p className="text-sm text-[#91A4BB] max-w-xs">
+                  <h4 className="font-serif-display text-lg sm:text-xl text-white font-semibold">Cảm ơn bạn đã liên hệ!</h4>
+                  <p className="text-xs sm:text-sm text-[#91A4BB] max-w-xs">
                     Chúng mình đã nhận được tin nhắn và sẽ phản hồi cho bạn trong thời gian sớm nhất nhé.
                   </p>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label htmlFor="name" className="block text-xs font-semibold text-[#91A4BB] uppercase tracking-wider mb-2 text-left">
+                    <label htmlFor="name" className="block text-xs font-semibold text-[#91A4BB] uppercase tracking-wider mb-1.5 sm:mb-2 text-left">
                       Họ và tên
                     </label>
                     <input
@@ -280,12 +280,12 @@ export const ContactScene: React.FC<ContactSceneProps> = ({ showReferenceOverlay
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       placeholder="Nguyễn Văn A"
-                      className="w-full px-4 py-3 rounded-xl bg-[#050D1A]/70 border border-[#70D7FF]/20 text-white placeholder-[#91A4BB]/40 focus:outline-none focus:border-[#70D7FF] focus:ring-1 focus:ring-[#70D7FF] transition-all text-sm"
+                      className="w-full px-4 py-3 rounded-xl bg-[#050D1A]/70 border border-[#70D7FF]/20 text-white placeholder-[#91A4BB]/40 focus:outline-none focus:border-[#70D7FF] focus:ring-1 focus:ring-[#70D7FF] transition-all text-base sm:text-sm"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="email" className="block text-xs font-semibold text-[#91A4BB] uppercase tracking-wider mb-2 text-left">
+                    <label htmlFor="email" className="block text-xs font-semibold text-[#91A4BB] uppercase tracking-wider mb-1.5 sm:mb-2 text-left">
                       Email liên hệ
                     </label>
                     <input
@@ -295,12 +295,12 @@ export const ContactScene: React.FC<ContactSceneProps> = ({ showReferenceOverlay
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       placeholder="your.email@example.com"
-                      className="w-full px-4 py-3 rounded-xl bg-[#050D1A]/70 border border-[#70D7FF]/20 text-white placeholder-[#91A4BB]/40 focus:outline-none focus:border-[#70D7FF] focus:ring-1 focus:ring-[#70D7FF] transition-all text-sm"
+                      className="w-full px-4 py-3 rounded-xl bg-[#050D1A]/70 border border-[#70D7FF]/20 text-white placeholder-[#91A4BB]/40 focus:outline-none focus:border-[#70D7FF] focus:ring-1 focus:ring-[#70D7FF] transition-all text-base sm:text-sm"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="message" className="block text-xs font-semibold text-[#91A4BB] uppercase tracking-wider mb-2 text-left">
+                    <label htmlFor="message" className="block text-xs font-semibold text-[#91A4BB] uppercase tracking-wider mb-1.5 sm:mb-2 text-left">
                       Tin nhắn của bạn
                     </label>
                     <textarea
@@ -310,14 +310,14 @@ export const ContactScene: React.FC<ContactSceneProps> = ({ showReferenceOverlay
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                       placeholder="Chia sẻ cùng CLB Âm nhạc nhé..."
-                      className="w-full px-4 py-3 rounded-xl bg-[#050D1A]/70 border border-[#70D7FF]/20 text-white placeholder-[#91A4BB]/40 focus:outline-none focus:border-[#70D7FF] focus:ring-1 focus:ring-[#70D7FF] transition-all text-sm resize-none"
+                      className="w-full px-4 py-3 rounded-xl bg-[#050D1A]/70 border border-[#70D7FF]/20 text-white placeholder-[#91A4BB]/40 focus:outline-none focus:border-[#70D7FF] focus:ring-1 focus:ring-[#70D7FF] transition-all text-base sm:text-sm resize-none"
                     />
                   </div>
 
                   <button
                     type="submit"
                     onMouseEnter={() => sound.playHover()}
-                    className="btn-primary-glow w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-semibold text-white tracking-wide cursor-pointer shadow-[0_0_20px_rgba(57,139,255,0.6)] hover:scale-[1.02] transition-all mt-2"
+                    className="btn-primary-glow w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-semibold text-white tracking-wide cursor-pointer shadow-[0_0_20px_rgba(57,139,255,0.6)] hover:scale-[1.02] active:scale-98 transition-all mt-2"
                   >
                     <Send className="w-4 h-4" />
                     <span>Gửi tin nhắn</span>

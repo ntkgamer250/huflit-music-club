@@ -92,8 +92,8 @@ export const MiniGameScene: React.FC<MiniGameSceneProps> = ({ onOpenRegister, sh
         className="minigame-vinyl absolute pointer-events-none z-[5]"
         style={{
           left: '50%',
-          top: '38%',
-          width: 'clamp(430px, 36vw, 600px)',
+          top: '40%',
+          width: 'clamp(260px, 68vw, 560px)',
           aspectRatio: '1/1',
           transform: 'translate(-50%, -50%)',
           opacity: 0.58,
@@ -137,8 +137,8 @@ export const MiniGameScene: React.FC<MiniGameSceneProps> = ({ onOpenRegister, sh
         className="minigame-soundwave absolute pointer-events-none mix-blend-screen opacity-26 z-[6]"
         style={{
           left: '50%',
-          top: '38%',
-          width: 'clamp(400px, 60vw, 900px)',
+          top: '40%',
+          width: 'clamp(280px, 85vw, 850px)',
           transform: 'translate(-50%, -50%)',
         }}
       >
@@ -177,25 +177,25 @@ export const MiniGameScene: React.FC<MiniGameSceneProps> = ({ onOpenRegister, sh
         className="minigame-title-group absolute z-[12] flex flex-col items-center text-center px-4"
         style={{
           left: '50%',
-          top: '16%',
+          top: '12%',
           transform: 'translateX(-50%)',
           width: 'min(92vw, 660px)',
         }}
       >
-        {/* 1. Eyebrow (top ~16%) */}
-        <div className="game-eyebrow flex items-center justify-center gap-3 mb-3">
-          <span className="w-8 h-[1px] bg-[#70D7FF]/80" />
-          <span className="text-xs sm:text-[13px] tracking-[0.28em] text-[#70D7FF] font-semibold uppercase flex items-center gap-1.5 glow-text-cyan">
+        {/* 1. Eyebrow */}
+        <div className="game-eyebrow flex items-center justify-center gap-2.5 mb-2.5 sm:mb-3">
+          <span className="w-6 sm:w-8 h-[1px] bg-[#70D7FF]/80" />
+          <span className="text-[11px] sm:text-[13px] tracking-[0.25em] sm:tracking-[0.28em] text-[#70D7FF] font-semibold uppercase flex items-center gap-1.5 glow-text-cyan">
             <Sparkles className="w-3.5 h-3.5" />
             MINI GAME
           </span>
-          <span className="w-8 h-[1px] bg-[#70D7FF]/80" />
+          <span className="w-6 sm:w-8 h-[1px] bg-[#70D7FF]/80" />
         </div>
 
-        {/* 2. Heading (top ~20-22%): clamp(56px, 5vw, 82px) */}
+        {/* 2. Heading */}
         <h2
-          className="game-heading font-serif-display text-white tracking-tight leading-[1.02] drop-shadow-[0_4px_30px_rgba(0,0,0,0.95)] mb-4"
-          style={{ fontSize: 'clamp(56px, 5vw, 82px)' }}
+          className="game-heading font-serif-display text-white tracking-tight leading-[1.04] drop-shadow-[0_4px_30px_rgba(0,0,0,0.95)] mb-3.5 sm:mb-4"
+          style={{ fontSize: 'clamp(36px, 8.5vw, 80px)' }}
         >
           <span>MUSIC </span>
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#70D7FF] via-[#398BFF] to-[#70D7FF] glow-text-cyan">
@@ -203,18 +203,17 @@ export const MiniGameScene: React.FC<MiniGameSceneProps> = ({ onOpenRegister, sh
           </span>
         </h2>
 
-        {/* 3. Short Description: max-width 540-580px */}
-        <p className="game-desc font-sans text-sm sm:text-base text-[#B0C4DE] max-w-[560px] mx-auto leading-relaxed drop-shadow-md mb-6">
+        {/* 3. Short Description */}
+        <p className="game-desc font-sans text-xs sm:text-base text-[#B0C4DE] max-w-[560px] mx-auto leading-relaxed drop-shadow-md mb-5 sm:mb-6 px-2">
           Thử thách khả năng cảm âm, đoán bài hát và nhận những phần quà thú vị từ CLB nhé!
         </p>
 
-        {/* 4. Single Primary CTA Button: 190–220px width, 54–58px height */}
+        {/* 4. Single Primary CTA Button */}
         <button
           type="button"
           onClick={handleStartGame}
           onMouseEnter={() => sound.playHover()}
-          className="btn-primary-glow flex items-center justify-center gap-2.5 rounded-full text-sm sm:text-base font-semibold text-white tracking-wide cursor-pointer shadow-[0_0_25px_rgba(57,139,255,0.6)] hover:scale-105 active:scale-95 transition-all"
-          style={{ width: 'clamp(190px, 22vw, 215px)', height: '56px' }}
+          className="btn-primary-glow flex items-center justify-center gap-2.5 rounded-full text-sm sm:text-base font-semibold text-white tracking-wide cursor-pointer shadow-[0_0_25px_rgba(57,139,255,0.6)] hover:scale-105 active:scale-95 transition-all w-full max-w-[210px] h-[52px] sm:h-[56px]"
         >
           <Play className="w-4 h-4 fill-current" />
           <span>Bắt đầu chơi</span>

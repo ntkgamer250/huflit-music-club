@@ -115,25 +115,25 @@ export const MusicQuiz: React.FC<MusicQuizProps> = ({ isOpen, onClose, onOpenReg
       />
 
       {/* Quiz Card Modal */}
-      <div className="relative w-full max-w-2xl p-5 sm:p-8 rounded-3xl bg-[#071A33]/95 border border-[#70D7FF]/35 shadow-[0_25px_60px_rgba(5,13,26,0.95),0_0_50px_rgba(57,139,255,0.3)] text-[#F4F7FB] z-10 my-6">
+      <div className="relative w-full max-w-2xl p-4 sm:p-8 rounded-2xl sm:rounded-3xl bg-[#071A33]/95 border border-[#70D7FF]/35 shadow-[0_25px_60px_rgba(5,13,26,0.95),0_0_50px_rgba(57,139,255,0.3)] text-[#F4F7FB] z-10 my-4 sm:my-6">
         {/* Header with Exit */}
-        <div className="flex items-center justify-between border-b border-[#70D7FF]/20 pb-4 mb-5">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#398BFF]/20 border border-[#70D7FF]/40 flex items-center justify-center text-[#70D7FF]">
-              <Volume2 className="w-5 h-5 animate-pulse" />
+        <div className="flex items-center justify-between border-b border-[#70D7FF]/20 pb-3 sm:pb-4 mb-4 sm:mb-5">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#398BFF]/20 border border-[#70D7FF]/40 flex items-center justify-center text-[#70D7FF]">
+              <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
             </div>
             <div>
-              <span className="text-[11px] font-mono tracking-widest text-[#70D7FF] uppercase">
+              <span className="text-[10px] sm:text-[11px] font-mono tracking-widest text-[#70D7FF] uppercase">
                 Music Club Mini Game
               </span>
-              <h3 className="font-serif-display text-lg sm:text-xl text-white">
+              <h3 className="font-serif-display text-base sm:text-xl text-white">
                 Đoán Tên Bài Hát & Giai Điệu
               </h3>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="px-3 py-1 rounded-full bg-[#0E2A4D] border border-[#70D7FF]/30 text-xs font-mono text-[#70D7FF]">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="px-2.5 py-1 rounded-full bg-[#0E2A4D] border border-[#70D7FF]/30 text-xs font-mono text-[#70D7FF]">
               Điểm: <span className="font-bold text-white">{score}</span>
             </div>
             <button
@@ -151,26 +151,26 @@ export const MusicQuiz: React.FC<MusicQuizProps> = ({ isOpen, onClose, onOpenReg
 
         {isGameOver ? (
           /* RESULT SCREEN */
-          <div className="text-center py-6">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-[#70D7FF]/15 border-2 border-[#70D7FF] flex items-center justify-center text-[#70D7FF] shadow-[0_0_30px_rgba(112,215,255,0.5)]">
-              <Award className="w-10 h-10" />
+          <div className="text-center py-4 sm:py-6">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 sm:mb-4 rounded-full bg-[#70D7FF]/15 border-2 border-[#70D7FF] flex items-center justify-center text-[#70D7FF] shadow-[0_0_30px_rgba(112,215,255,0.5)]">
+              <Award className="w-8 h-8 sm:w-10 sm:h-10" />
             </div>
 
             <span className="text-xs uppercase tracking-widest text-[#70D7FF] font-semibold">
               Hoàn Thành Thử Thách!
             </span>
-            <h3 className="font-serif-display text-3xl sm:text-4xl text-white mt-1 mb-2">
+            <h3 className="font-serif-display text-2xl sm:text-4xl text-white mt-1 mb-2">
               {score >= 80 ? 'Đôi Tai Vàng Của CLB! 🌟' : 'Tuyệt Vời! Tiếp Tục Đam Mê! 🎵'}
             </h3>
-            <p className="text-sm text-[#91A4BB] mb-6">
-              Bạn đã đạt <span className="text-2xl font-bold text-[#70D7FF]">{score}</span> / 100 điểm thử thách âm nhạc.
+            <p className="text-xs sm:text-sm text-[#91A4BB] mb-5 sm:mb-6">
+              Bạn đã đạt <span className="text-xl sm:text-2xl font-bold text-[#70D7FF]">{score}</span> / 100 điểm thử thách âm nhạc.
             </p>
 
-            <div className="flex flex-wrap items-center justify-center gap-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full">
               <button
                 type="button"
                 onClick={handleRestart}
-                className="btn-secondary-glow flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold text-[#F4F7FB] cursor-pointer"
+                className="w-full sm:w-auto btn-secondary-glow flex items-center justify-center gap-2 px-6 py-3 rounded-full text-sm font-semibold text-[#F4F7FB] cursor-pointer"
               >
                 <RotateCcw className="w-4 h-4" />
                 <span>Chơi Lại</span>
@@ -183,7 +183,7 @@ export const MusicQuiz: React.FC<MusicQuizProps> = ({ isOpen, onClose, onOpenReg
                   onClose()
                   onOpenRegister()
                 }}
-                className="btn-primary-glow flex items-center gap-2 px-7 py-3 rounded-full text-sm font-semibold text-white cursor-pointer"
+                className="w-full sm:w-auto btn-primary-glow flex items-center justify-center gap-2 px-7 py-3 rounded-full text-sm font-semibold text-white cursor-pointer"
               >
                 <span>Đăng ký CTV Ngay</span>
                 <ArrowRight className="w-4 h-4" />
@@ -198,7 +198,7 @@ export const MusicQuiz: React.FC<MusicQuizProps> = ({ isOpen, onClose, onOpenReg
               <span>Câu hỏi {currentIndex + 1} / {musicQuizQuestions.length}</span>
               <span className="text-[#70D7FF]">{currentQuestion.genre}</span>
             </div>
-            <div className="w-full h-1.5 bg-[#050D1A] rounded-full overflow-hidden mb-5">
+            <div className="w-full h-1.5 bg-[#050D1A] rounded-full overflow-hidden mb-4 sm:mb-5">
               <div
                 className="h-full bg-gradient-to-r from-[#398BFF] to-[#70D7FF] transition-all duration-300 rounded-full"
                 style={{ width: `${((currentIndex + 1) / musicQuizQuestions.length) * 100}%` }}
@@ -206,40 +206,40 @@ export const MusicQuiz: React.FC<MusicQuizProps> = ({ isOpen, onClose, onOpenReg
             </div>
 
             {/* Question Title */}
-            <h4 className="font-sans font-semibold text-base sm:text-lg text-white mb-4">
+            <h4 className="font-sans font-semibold text-sm sm:text-lg text-white mb-3 sm:mb-4">
               {currentQuestion.question}
             </h4>
 
             {/* Audio Melody Player Bar */}
-            <div className="p-4 rounded-2xl bg-[#050D1A]/90 border border-[#70D7FF]/25 flex items-center justify-between gap-4 mb-5 shadow-inner">
-              <div className="flex items-center gap-3">
+            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-[#050D1A]/90 border border-[#70D7FF]/25 flex items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-5 shadow-inner">
+              <div className="flex items-center gap-2.5 sm:gap-3">
                 <button
                   type="button"
                   onClick={handlePlayMelody}
-                  className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-all cursor-pointer shadow-lg ${
+                  className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-white transition-all cursor-pointer shadow-lg shrink-0 ${
                     isPlayingMelody
                       ? 'bg-[#70D7FF] text-[#050D1A] shadow-[0_0_20px_#70D7FF] animate-pulse'
                       : 'bg-[#398BFF] hover:bg-[#5CA4FF] shadow-[0_0_15px_rgba(57,139,255,0.6)]'
                   }`}
                 >
-                  {isPlayingMelody ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-0.5" />}
+                  {isPlayingMelody ? <Pause className="w-4 h-4 sm:w-5 sm:h-5 fill-current" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current ml-0.5" />}
                 </button>
                 <div>
                   <p className="text-xs font-semibold text-white">
-                    {isPlayingMelody ? 'Đang phát đoạn giai điệu synth...' : 'Bấm để nghe giai điệu'}
+                    {isPlayingMelody ? 'Đang phát giai điệu synth...' : 'Bấm để nghe giai điệu'}
                   </p>
-                  <p className="text-[11px] text-[#91A4BB]">
+                  <p className="text-[10px] sm:text-[11px] text-[#91A4BB]">
                     Được tổng hợp trực tiếp bằng Web Audio API
                   </p>
                 </div>
               </div>
 
               {/* Animated waveform visualizer */}
-              <div className="flex items-center gap-1 h-6">
+              <div className="flex items-center gap-0.5 sm:gap-1 h-6 shrink-0">
                 {[12, 24, 18, 28, 14, 22, 10, 26, 16].map((h, i) => (
                   <span
                     key={i}
-                    className={`w-1 rounded-full bg-[#70D7FF] transition-all duration-150 ${
+                    className={`w-0.5 sm:w-1 rounded-full bg-[#70D7FF] transition-all duration-150 ${
                       isPlayingMelody ? 'animate-pulse' : 'opacity-40'
                     }`}
                     style={{

@@ -1095,15 +1095,15 @@ export function App() {
           />
         </div>
 
-        {/* SCENE 02: ABOUT (Club Overview / Backstage - Overlaps Hero ~18vh) */}
-        <div className="-mt-[18vh] relative z-[3]">
+        {/* SCENE 02: ABOUT (Club Overview / Backstage - Overlaps Hero ~18vh on Desktop) */}
+        <div className="lg:-mt-[18vh] -mt-0 relative z-[3]">
           <AboutScene
             showReferenceOverlay={showReferenceOverlay}
           />
         </div>
 
-        {/* SCENE 02B: WE ARE FAMILY (Club Memories & Friendship - Overlaps About ~18vh) */}
-        <div className="-mt-[18vh] relative z-[4]">
+        {/* SCENE 02B: WE ARE FAMILY (Club Memories & Friendship - Overlaps About ~18vh on Desktop) */}
+        <div className="lg:-mt-[18vh] -mt-0 relative z-[4]">
           <FamilyScene
             onOpenRegister={() => setIsRegisterOpen(true)}
           />

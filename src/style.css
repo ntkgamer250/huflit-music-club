@@ -12,7 +12,7 @@
   --text-secondary: #91A4BB;
   --warm-light: #FFB45C;
   --font-serif: 'DM Serif Display', 'Cormorant Garamond', Georgia, serif;
-  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
 }
 
 * {

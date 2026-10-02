@@ -375,7 +375,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
               <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-9">
                 <h2
                   id={`${formId}-title`}
-                  className="font-serif-display text-3xl sm:text-4xl lg:text-[42px] text-white tracking-tight leading-[1.1] mb-3.5"
+                  className="font-sans font-extrabold text-3xl sm:text-4xl lg:text-[40px] text-white tracking-tight leading-[1.15] mb-3.5"
                 >
                   <span>TRỞ THÀNH MỘT PHẦN </span>
                   <br className="hidden sm:block" />
@@ -440,12 +440,12 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                   </h3>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-5">
                   {/* Họ và tên */}
                   <div className="space-y-1.5">
                     <label
                       htmlFor={`${formId}-name`}
-                      className="block text-sm font-medium text-[#B8CDE5]"
+                      className="block text-xs sm:text-sm font-medium text-[#B8CDE5]"
                     >
                       Họ và tên <span className="text-[#70D7FF] font-bold">*</span>
                     </label>
@@ -461,7 +461,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                         if (errors.fullName) setErrors({ ...errors, fullName: undefined })
                       }}
                       aria-invalid={Boolean(errors.fullName)}
-                      className={`w-full h-[52px] px-4 rounded-2xl bg-[#0C1D3A]/72 border text-sm text-[#F4F7FB] outline-none transition-all placeholder:text-[#91A4BB]/45 ${
+                      className={`w-full h-[48px] sm:h-[52px] px-4 rounded-xl sm:rounded-2xl bg-[#0C1D3A]/72 border text-base sm:text-sm text-[#F4F7FB] outline-none transition-all placeholder:text-[#91A4BB]/45 ${
                         errors.fullName
                           ? 'border-[#FF6B6B] focus:border-[#FF6B6B] focus:ring-2 focus:ring-[#FF6B6B]/20'
                           : 'border-[#78B9F0]/15 focus:border-[#64C3FF]/70 focus:ring-2 focus:ring-[#3C9BFF]/10'
@@ -479,7 +479,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                   <div className="space-y-1.5">
                     <label
                       htmlFor={`${formId}-email`}
-                      className="block text-sm font-medium text-[#B8CDE5]"
+                      className="block text-xs sm:text-sm font-medium text-[#B8CDE5]"
                     >
                       Email <span className="text-[#70D7FF] font-bold">*</span>
                     </label>
@@ -494,7 +494,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                         if (errors.email) setErrors({ ...errors, email: undefined })
                       }}
                       aria-invalid={Boolean(errors.email)}
-                      className={`w-full h-[52px] px-4 rounded-2xl bg-[#0C1D3A]/72 border text-sm text-[#F4F7FB] outline-none transition-all placeholder:text-[#91A4BB]/45 ${
+                      className={`w-full h-[48px] sm:h-[52px] px-4 rounded-xl sm:rounded-2xl bg-[#0C1D3A]/72 border text-base sm:text-sm text-[#F4F7FB] outline-none transition-all placeholder:text-[#91A4BB]/45 ${
                         errors.email
                           ? 'border-[#FF6B6B] focus:border-[#FF6B6B] focus:ring-2 focus:ring-[#FF6B6B]/20'
                           : 'border-[#78B9F0]/15 focus:border-[#64C3FF]/70 focus:ring-2 focus:ring-[#3C9BFF]/10'
@@ -512,7 +512,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                   <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
                     <label
                       htmlFor={`${formId}-studentId`}
-                      className="block text-sm font-medium text-[#B8CDE5]"
+                      className="block text-xs sm:text-sm font-medium text-[#B8CDE5]"
                     >
                       Mã số sinh viên <span className="text-[#70D7FF] font-bold">*</span>
                     </label>
@@ -529,7 +529,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                         if (errors.studentId) setErrors({ ...errors, studentId: undefined })
                       }}
                       aria-invalid={Boolean(errors.studentId)}
-                      className={`w-full h-[52px] px-4 rounded-2xl bg-[#0C1D3A]/72 border text-sm text-[#F4F7FB] font-mono tracking-wider outline-none transition-all placeholder:text-[#91A4BB]/45 uppercase ${
+                      className={`w-full h-[48px] sm:h-[52px] px-4 rounded-xl sm:rounded-2xl bg-[#0C1D3A]/72 border text-base sm:text-sm text-[#F4F7FB] font-mono tracking-wider outline-none transition-all placeholder:text-[#91A4BB]/45 uppercase ${
                         errors.studentId
                           ? 'border-[#FF6B6B] focus:border-[#FF6B6B] focus:ring-2 focus:ring-[#FF6B6B]/20'
                           : 'border-[#78B9F0]/15 focus:border-[#64C3FF]/70 focus:ring-2 focus:ring-[#3C9BFF]/10'
@@ -889,7 +889,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                           if (errors.castingSong) setErrors({ ...errors, castingSong: undefined })
                         }}
                         aria-invalid={Boolean(errors.castingSong)}
-                        className={`w-full h-[52px] px-4 rounded-2xl bg-[#0C1D3A]/72 border text-sm text-[#F4F7FB] outline-none transition-all placeholder:text-[#91A4BB]/45 ${
+                        className={`w-full h-[48px] sm:h-[52px] px-4 rounded-xl sm:rounded-2xl bg-[#0C1D3A]/72 border text-base sm:text-sm text-[#F4F7FB] outline-none transition-all placeholder:text-[#91A4BB]/45 ${
                           errors.castingSong
                             ? 'border-[#FF6B6B] focus:border-[#FF6B6B] focus:ring-2 focus:ring-[#FF6B6B]/20'
                             : 'border-[#78B9F0]/15 focus:border-[#64C3FF]/70 focus:ring-2 focus:ring-[#3C9BFF]/10'
@@ -932,7 +932,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                         if (errors.beatUrl) setErrors({ ...errors, beatUrl: undefined })
                       }}
                       aria-invalid={Boolean(errors.beatUrl)}
-                      className={`w-full h-[52px] px-4 rounded-2xl bg-[#0C1D3A]/72 border text-sm text-[#F4F7FB] outline-none transition-all placeholder:text-[#91A4BB]/45 ${
+                      className={`w-full h-[48px] sm:h-[52px] px-4 rounded-xl sm:rounded-2xl bg-[#0C1D3A]/72 border text-base sm:text-sm text-[#F4F7FB] outline-none transition-all placeholder:text-[#91A4BB]/45 ${
                         errors.beatUrl
                           ? 'border-[#FF6B6B] focus:border-[#FF6B6B] focus:ring-2 focus:ring-[#FF6B6B]/20'
                           : 'border-[#78B9F0]/15 focus:border-[#64C3FF]/70 focus:ring-2 focus:ring-[#3C9BFF]/10'
@@ -1022,7 +1022,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                           if (errors.performanceUrl) setErrors({ ...errors, performanceUrl: undefined })
                         }}
                         aria-invalid={Boolean(errors.performanceUrl)}
-                        className={`w-full h-[52px] px-4 rounded-2xl bg-[#0C1D3A]/72 border text-sm text-[#F4F7FB] outline-none transition-all placeholder:text-[#91A4BB]/45 ${
+                        className={`w-full h-[48px] sm:h-[52px] px-4 rounded-xl sm:rounded-2xl bg-[#0C1D3A]/72 border text-base sm:text-sm text-[#F4F7FB] outline-none transition-all placeholder:text-[#91A4BB]/45 ${
                           errors.performanceUrl
                             ? 'border-[#FF6B6B] focus:border-[#FF6B6B] focus:ring-2 focus:ring-[#FF6B6B]/20'
                             : 'border-[#78B9F0]/15 focus:border-[#64C3FF]/70 focus:ring-2 focus:ring-[#3C9BFF]/10'
@@ -1090,7 +1090,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                   {/* Dynamic placeholder personalized for Vocal vs Dancer */}
                   <textarea
                     id={`${formId}-passion`}
-                    rows={5}
+                    rows={4}
                     required
                     placeholder={
                       formData.castingDivision === 'vocal'
@@ -1103,7 +1103,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                       if (errors.passion) setErrors({ ...errors, passion: undefined })
                     }}
                     aria-invalid={Boolean(errors.passion)}
-                    className={`w-full p-4 rounded-2xl bg-[#0C1D3A]/72 border text-sm text-[#F4F7FB] outline-none transition-all placeholder:text-[#91A4BB]/45 resize-none leading-relaxed ${
+                    className={`w-full p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-[#0C1D3A]/72 border text-base sm:text-sm text-[#F4F7FB] outline-none transition-all placeholder:text-[#91A4BB]/45 resize-none leading-relaxed ${
                       errors.passion
                         ? 'border-[#FF6B6B] focus:border-[#FF6B6B] focus:ring-2 focus:ring-[#FF6B6B]/20'
                         : 'border-[#78B9F0]/15 focus:border-[#64C3FF]/70 focus:ring-2 focus:ring-[#3C9BFF]/10'

@@ -14,7 +14,7 @@ export const AboutScene: React.FC<AboutSceneProps> = ({ showReferenceOverlay = f
     <section
       id="about"
       ref={sceneRef}
-      className="relative w-full h-screen min-h-[820px] pt-[18vh] overflow-visible select-none bg-transparent"
+      className="relative w-full min-h-0 lg:h-screen lg:min-h-[820px] pt-12 sm:pt-16 lg:pt-[18vh] pb-8 lg:pb-0 overflow-visible select-none bg-transparent"
     >
       {/* Reference Overlay (toggled via 'R') */}
       <ReferenceOverlay
@@ -111,7 +111,6 @@ export const AboutScene: React.FC<AboutSceneProps> = ({ showReferenceOverlay = f
           </div>
 
           {/* 2. PHOTO 01: Top photo - Live Theatrical Stage Performance (z-index: 5) */}
-          {/* left: 19%, top: 0%, width: 67%, transform: rotate(-1deg) */}
           <div
             className="photo photo-1 about-photo-1 about-photo-slot-1 absolute transition-transform duration-300 hover:scale-[1.02] hover:z-30 cursor-pointer"
             style={{
@@ -154,7 +153,6 @@ export const AboutScene: React.FC<AboutSceneProps> = ({ showReferenceOverlay = f
           </div>
 
           {/* 4. PHOTO 02: Far Left photo - Giải Vàng CLB Âm Nhạc (z-index: 7) */}
-          {/* left: 1%, top: 42%, width: 52%, transform: rotate(-2deg) */}
           <div
             className="photo photo-2 about-photo-2 about-photo-slot-2 absolute transition-transform duration-300 hover:scale-[1.02] hover:z-30 cursor-pointer"
             style={{
@@ -176,7 +174,6 @@ export const AboutScene: React.FC<AboutSceneProps> = ({ showReferenceOverlay = f
           </div>
 
           {/* 5. PHOTO 03: Bottom photo - Youth Fest 2026 Live Performance (z-index: 8) */}
-          {/* left: 48%, top: 50%, width: 50%, transform: rotate(2deg) */}
           <div
             className="photo photo-3 about-photo-3 about-photo-slot-3 absolute transition-transform duration-300 hover:scale-[1.02] hover:z-30 cursor-pointer"
             style={{
@@ -197,7 +194,7 @@ export const AboutScene: React.FC<AboutSceneProps> = ({ showReferenceOverlay = f
             </div>
           </div>
 
-          {/* 6. WAVE-FRONT: Only a short visible segment in front of a small section of Photo 03, continuing downward (z-index: 9, opacity: 0.55) */}
+          {/* 6. WAVE-FRONT: Only a short visible segment in front of Photo 03 */}
           <div
             className="wave wave-front absolute pointer-events-none mix-blend-screen"
             style={{
@@ -221,44 +218,47 @@ export const AboutScene: React.FC<AboutSceneProps> = ({ showReferenceOverlay = f
       </div>
 
       {/* MOBILE / TABLET RESPONSIVE FALLBACK (< lg) */}
-      <div className="lg:hidden relative z-20 max-w-xl mx-auto px-4 py-16 flex flex-col items-center text-center">
-        <div className="flex items-center gap-2 mb-3">
+      <div className="lg:hidden relative z-20 max-w-xl mx-auto px-4 py-8 sm:py-12 flex flex-col items-center text-center">
+        <div className="flex items-center gap-2 mb-2.5">
           <span className="w-6 h-[1px] bg-[#70D7FF]" />
-          <span className="text-xs tracking-[0.25em] text-[#70D7FF] font-semibold uppercase">
+          <span className="text-[11px] tracking-[0.25em] text-[#70D7FF] font-semibold uppercase">
             MUSIC • COMMUNITY
           </span>
           <span className="w-6 h-[1px] bg-[#70D7FF]" />
         </div>
 
-        <h2 className="font-serif-display text-4xl sm:text-5xl text-white mb-4">
+        <h2 className="font-serif-display text-3xl sm:text-4xl text-white mb-3 tracking-tight">
           WE ARE <span className="text-[#70D7FF]">THE SOUND</span>
         </h2>
 
-        <p className="font-sans text-sm text-[#91A4BB] leading-relaxed mb-6">
+        <p className="font-sans text-sm text-[#91A4BB] leading-relaxed mb-6 max-w-md">
           CLB Âm nhạc là nơi những người trẻ yêu âm nhạc gặp gỡ, học hỏi và cùng nhau tạo nên những sân khấu đáng nhớ.
         </p>
 
         {/* Stacked overlapping photo cluster for mobile */}
         <div className="relative w-full max-w-sm aspect-[4/3] my-4">
-          <div className="absolute top-0 right-2 w-[65%] rounded-xl overflow-hidden shadow-xl border border-[#70D7FF]/30 -rotate-2 z-10 aspect-[3/2]">
+          <div className="absolute top-0 right-2 w-[68%] rounded-2xl overflow-hidden shadow-[0_15px_35px_rgba(0,0,0,0.85)] border border-[#70D7FF]/35 -rotate-2 z-10 aspect-[3/2]">
             <img
               src="/assets/music-club/scene-02-about/club_stage_performance.jpg"
               alt="Biểu diễn sân khấu"
               className="w-full h-full object-cover"
+              loading="lazy"
             />
           </div>
-          <div className="absolute bottom-2 left-2 w-[60%] rounded-xl overflow-hidden shadow-xl border border-[#70D7FF]/35 rotate-2 z-20 aspect-[3/2]">
+          <div className="absolute bottom-2 left-2 w-[62%] rounded-2xl overflow-hidden shadow-[0_15px_35px_rgba(0,0,0,0.9)] border border-[#70D7FF]/40 rotate-2 z-20 aspect-[3/2]">
             <img
               src="/assets/music-club/scene-02-about/club_award_gold.jpg"
               alt="Lễ trao giải Giải Vàng"
               className="w-full h-full object-cover"
+              loading="lazy"
             />
           </div>
-          <div className="absolute bottom-0 right-4 w-[55%] rounded-xl overflow-hidden shadow-xl border border-[#70D7FF]/35 -rotate-1 z-30 aspect-[3/2]">
+          <div className="absolute bottom-0 right-4 w-[56%] rounded-2xl overflow-hidden shadow-[0_15px_35px_rgba(0,0,0,0.9)] border border-[#70D7FF]/40 -rotate-1 z-30 aspect-[3/2]">
             <img
               src="/assets/music-club/scene-02-about/club_youth_fest.jpg"
               alt="Youth Fest 2026"
               className="w-full h-full object-cover"
+              loading="lazy"
             />
           </div>
         </div>
