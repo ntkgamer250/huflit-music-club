@@ -29,7 +29,7 @@ import {
   fetchApplications,
   logoutAdmin,
   AdminUser,
-  getExportCsvUrl,
+  exportClientCsv,
 } from '../../lib/adminApi'
 import { ApplicantDetailDrawer } from './ApplicantDetailDrawer'
 
@@ -241,19 +241,22 @@ export const AdminApplicationsPage: React.FC<AdminApplicationsPageProps> = ({
           </div>
 
           <div className="flex items-center gap-2.5">
-            <a
-              href={getExportCsvUrl({
-                q: debouncedQuery,
-                division: divisionFilter,
-                status: statusFilter,
-                experience: experienceFilter,
-              })}
-              download
+            <button
+              type="button"
+              onClick={() => {
+                exportClientCsv({
+                  q: debouncedQuery,
+                  division: divisionFilter,
+                  status: statusFilter,
+                  experience: experienceFilter,
+                  sort: sortOption,
+                })
+              }}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#0D203A] hover:bg-[#132D50] text-[#70D7FF] border border-[#70D7FF]/25 text-xs font-semibold transition-all cursor-pointer shadow-sm"
             >
               <Download className="w-4 h-4" />
               <span>Xuất CSV</span>
-            </a>
+            </button>
 
             <button
               type="button"

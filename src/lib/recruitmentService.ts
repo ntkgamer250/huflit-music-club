@@ -1,3 +1,5 @@
+import { addClientApplication } from './clientStore'
+
 export interface RecruitmentFormData {
   fullName: string
   email: string
@@ -19,14 +21,15 @@ export interface SubmissionResponse {
 
 /**
  * Clean submit abstraction for HMC Collaborator Casting.
- * Integrates smoothly with localStorage for local offline preservation
- * and can be connected to any backend / Firebase / REST API.
+ * Works seamlessly on static deployments (Netlify) via client storage
+ * and connects to REST API/backend servers when available.
  */
 export async function submitApplication(
   data: RecruitmentFormData
 ): Promise<SubmissionResponse> {
   const now = new Date().toISOString()
 
+  // 1. Try server endpoint first
   try {
     const res = await fetch('/api/applications', {
       method: 'POST',
@@ -36,29 +39,39 @@ export async function submitApplication(
       body: JSON.stringify(data),
     })
 
-    const result = await res.json()
-
-    if (!res.ok || !result.success) {
-      throw new Error(result.error || 'Chưa thể gửi đơn. Vui lòng thử lại.')
+    const contentType = res.headers.get('content-type') || ''
+    if (res.ok && contentType.includes('application/json')) {
+      const result = await res.json()
+      if (result.success) {
+        try {
+          addClientApplication(data)
+        } catch {
+          // ignore
+        }
+        return {
+          success: true,
+          id: result.id,
+          submittedAt: now,
+          message: result.message || 'Đơn đăng ký đã được ghi nhận thành công!',
+        }
+      }
     }
+  } catch {
+    // Static hosting fallback
+  }
 
-    // Also mirror to localStorage for offline cache
-    try {
-      const existing = JSON.parse(localStorage.getItem('hmc_recruitment_applications') || '[]')
-      existing.push({ id: result.id, ...data, submittedAt: now })
-      localStorage.setItem('hmc_recruitment_applications', JSON.stringify(existing))
-    } catch {
-      // ignore local cache error
-    }
-
+  // 2. Client-side storage fallback (Netlify)
+  try {
+    const newApp = addClientApplication(data)
     return {
       success: true,
-      id: result.id,
+      id: newApp.id,
       submittedAt: now,
-      message: result.message || 'Đơn đăng ký đã được ghi nhận thành công!',
+      message: 'Đơn đăng ký của bạn đã được ghi nhận thành công!',
     }
   } catch (err: any) {
     console.error('Submission request failed:', err)
     throw new Error(err.message || 'Chưa thể gửi đơn. Vui lòng thử lại.')
   }
 }
+

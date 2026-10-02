@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { Mail, Send, MapPin, CheckCircle2, Sparkles } from 'lucide-react'
+import { Mail, Send, MapPin, CheckCircle2, Sparkles, ShieldCheck } from 'lucide-react'
 import { clubData } from '../../data/socialLinks'
 import { sound } from '../../lib/audioSynth'
 import confetti from 'canvas-confetti'
@@ -327,7 +327,30 @@ export const ContactScene: React.FC<ContactSceneProps> = ({ showReferenceOverlay
             </div>
           </div>
         </div>
+
+        {/* BOTTOM FOOTER */}
+        <div className="mt-16 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#91A4BB]/70">
+          <div>
+            &copy; {new Date().getFullYear()} HUFLIT MUSIC CLUB. All rights reserved.
+          </div>
+
+          <div className="flex items-center gap-4">
+            <a
+              href="/admin/login"
+              onClick={(e) => {
+                e.preventDefault()
+                window.history.pushState({}, '', '/admin/login')
+                window.dispatchEvent(new PopStateEvent('popstate'))
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-[#398BFF]/20 text-[#91A4BB] hover:text-[#70D7FF] border border-white/10 hover:border-[#70D7FF]/30 transition-all font-mono text-[11px]"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-[#70D7FF]" />
+              <span>HMC Admin Portal</span>
+            </a>
+          </div>
+        </div>
       </div>
     </section>
   )
 }
+

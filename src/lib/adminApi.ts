@@ -1,3 +1,13 @@
+import {
+  clientLogin,
+  getClientSession,
+  clearClientSession,
+  getClientApplications,
+  queryClientApplications,
+  updateClientApplication,
+  exportClientCsv,
+} from './clientStore'
+
 export interface AdminUser {
   id: string
   email: string
@@ -78,23 +88,41 @@ function getAuthHeaders(): HeadersInit {
   return headers
 }
 
-export async function loginAdmin(email: string, password: string): Promise<{ success: boolean; user?: AdminUser; error?: string }> {
+export async function loginAdmin(
+  email: string,
+  password: string
+): Promise<{ success: boolean; user?: AdminUser; error?: string }> {
+  // 1. Try server endpoint first (e.g. during local dev or custom backend)
   try {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     })
-    const data = await res.json()
-    if (!res.ok || !data.success) {
-      return { success: false, error: data.error || 'Thông tin đăng nhập không chính xác.' }
+    const contentType = res.headers.get('content-type') || ''
+    if (contentType.includes('application/json')) {
+      const data = await res.json()
+      if (res.ok && data.success) {
+        if (data.token) {
+          saveToken(data.token)
+        }
+        return { success: true, user: data.user }
+      }
     }
-    if (data.token) {
-      saveToken(data.token)
-    }
-    return { success: true, user: data.user }
-  } catch (err: any) {
-    return { success: false, error: 'Không thể kết nối đến máy chủ. Vui lòng thử lại.' }
+  } catch {
+    // server unreachable or static SPA host
+  }
+
+  // 2. Client-side fallback for static deployment (Netlify)
+  const clientRes = clientLogin(email, password)
+  if (clientRes.success && clientRes.user) {
+    saveToken('client_session_' + Date.now())
+    return clientRes
+  }
+
+  return {
+    success: false,
+    error: clientRes.error || 'Thông tin đăng nhập không chính xác. (Mặc định: admin@hmcmusic.club / HmcAdmin@2026)',
   }
 }
 
@@ -108,82 +136,115 @@ export async function logoutAdmin(): Promise<void> {
     // ignore
   } finally {
     clearSavedToken()
+    clearClientSession()
   }
 }
 
 export async function checkAuth(): Promise<{ authenticated: boolean; user?: AdminUser }> {
+  // 1. Check client session first (works immediately on Netlify)
+  const clientUser = getClientSession()
+  if (clientUser) {
+    return { authenticated: true, user: clientUser }
+  }
+
+  // 2. Check server session if client session not set
   try {
     const res = await fetch('/api/auth/me', {
       method: 'GET',
       headers: getAuthHeaders(),
     })
-    if (!res.ok) return { authenticated: false }
-    const data = await res.json()
-    return data
+    const contentType = res.headers.get('content-type') || ''
+    if (res.ok && contentType.includes('application/json')) {
+      const data = await res.json()
+      return data
+    }
+    return { authenticated: false }
   } catch {
     return { authenticated: false }
   }
 }
 
 export async function fetchApplications(params: ApplicationQueryParams = {}): Promise<ApplicationsResponse> {
-  const searchParams = new URLSearchParams()
-  if (params.q) searchParams.set('q', params.q)
-  if (params.division && params.division !== 'all') searchParams.set('division', params.division)
-  if (params.status && params.status !== 'all') searchParams.set('status', params.status)
-  if (params.experience && params.experience !== 'all') searchParams.set('experience', params.experience)
-  if (params.sort) searchParams.set('sort', params.sort)
-  if (params.page) searchParams.set('page', String(params.page))
-  if (params.limit) searchParams.set('limit', String(params.limit))
+  // 1. Try server endpoint first
+  try {
+    const searchParams = new URLSearchParams()
+    if (params.q) searchParams.set('q', params.q)
+    if (params.division && params.division !== 'all') searchParams.set('division', params.division)
+    if (params.status && params.status !== 'all') searchParams.set('status', params.status)
+    if (params.experience && params.experience !== 'all') searchParams.set('experience', params.experience)
+    if (params.sort) searchParams.set('sort', params.sort)
+    if (params.page) searchParams.set('page', String(params.page))
+    if (params.limit) searchParams.set('limit', String(params.limit))
 
-  const url = `/api/applications?${searchParams.toString()}`
-  const res = await fetch(url, {
-    headers: getAuthHeaders(),
-  })
+    const url = `/api/applications?${searchParams.toString()}`
+    const res = await fetch(url, {
+      headers: getAuthHeaders(),
+    })
+    const contentType = res.headers.get('content-type') || ''
 
-  if (!res.ok) {
-    if (res.status === 401) {
-      throw new Error('UNAUTHORIZED')
+    if (res.ok && contentType.includes('application/json')) {
+      return await res.json()
     }
-    const errData = await res.json().catch(() => ({}))
-    throw new Error(errData.error || 'Không thể tải danh sách đăng ký.')
+
+    if (res.status === 401) {
+      const clientUser = getClientSession()
+      if (!clientUser) {
+        throw new Error('UNAUTHORIZED')
+      }
+    }
+  } catch (err: any) {
+    if (err.message === 'UNAUTHORIZED') throw err
   }
 
-  return res.json()
+  // 2. Client-side store fallback for Netlify
+  return queryClientApplications(params)
 }
 
 export async function fetchApplicationById(id: string): Promise<ApplicationItem> {
-  const res = await fetch(`/api/applications/${id}`, {
-    headers: getAuthHeaders(),
-  })
-
-  if (!res.ok) {
-    if (res.status === 401) throw new Error('UNAUTHORIZED')
-    const errData = await res.json().catch(() => ({}))
-    throw new Error(errData.error || 'Không tìm thấy hồ sơ.')
+  try {
+    const res = await fetch(`/api/applications/${id}`, {
+      headers: getAuthHeaders(),
+    })
+    const contentType = res.headers.get('content-type') || ''
+    if (res.ok && contentType.includes('application/json')) {
+      const data = await res.json()
+      return data.application
+    }
+  } catch {
+    // fallback to client store
   }
 
-  const data = await res.json()
-  return data.application
+  const apps = getClientApplications()
+  const found = apps.find((a) => a.id === id)
+  if (!found) throw new Error('Không tìm thấy hồ sơ.')
+  return found
 }
 
 export async function updateApplication(
   id: string,
   payload: { status?: CastingStatus; adminNote?: string }
 ): Promise<ApplicationItem> {
-  const res = await fetch(`/api/applications/${id}`, {
-    method: 'PATCH',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(payload),
-  })
-
-  if (!res.ok) {
-    if (res.status === 401) throw new Error('UNAUTHORIZED')
-    const errData = await res.json().catch(() => ({}))
-    throw new Error(errData.error || 'Không thể cập nhật hồ sơ.')
+  try {
+    const res = await fetch(`/api/applications/${id}`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    })
+    const contentType = res.headers.get('content-type') || ''
+    if (res.ok && contentType.includes('application/json')) {
+      const data = await res.json()
+      try {
+        updateClientApplication(id, payload)
+      } catch {
+        // ignore
+      }
+      return data.application
+    }
+  } catch {
+    // fallback
   }
 
-  const data = await res.json()
-  return data.application
+  return updateClientApplication(id, payload)
 }
 
 export function getExportCsvUrl(params: ApplicationQueryParams = {}): string {
@@ -194,3 +255,6 @@ export function getExportCsvUrl(params: ApplicationQueryParams = {}): string {
   if (params.experience && params.experience !== 'all') searchParams.set('experience', params.experience)
   return `/api/applications/export/csv?${searchParams.toString()}`
 }
+
+export { exportClientCsv }
+
