@@ -17,6 +17,7 @@
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
@@ -25,6 +26,7 @@ html {
   font-family: var(--font-sans);
   scroll-behavior: smooth;
   overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -32,8 +34,54 @@ body {
   color: var(--text-primary);
   font-family: var(--font-sans);
   min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
   position: relative;
+  touch-action: pan-y;
+}
+
+/* Touch action manipulation on interactive controls for fast response & no double-tap zoom delay */
+button,
+a,
+input,
+select,
+textarea,
+[role="button"],
+[role="radio"] {
+  touch-action: manipulation;
+}
+
+/* Mobile iOS Safari auto-zoom prevention */
+@media screen and (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Safe Area Inset Helpers for Notched Screens (iPhone X+, Android Cutouts) */
+.pt-safe {
+  padding-top: max(1rem, env(safe-area-inset-top));
+}
+
+.pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.pl-safe {
+  padding-left: max(1rem, env(safe-area-inset-left));
+}
+
+.pr-safe {
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+/* Mobile Tactile Active Press Feedback */
+.touch-active:active {
+  transform: scale(0.97);
+  opacity: 0.92;
+  transition: transform 0.1s ease, opacity 0.1s ease;
 }
 
 /* Typography Helpers */

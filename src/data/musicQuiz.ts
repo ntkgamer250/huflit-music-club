@@ -11,7 +11,6 @@ export interface QuizQuestion {
 }
 
 // Frequency constants (Hz)
-const C4 = 261.63
 const D4 = 293.66
 const E4 = 329.63
 const F4 = 349.23
@@ -21,7 +20,6 @@ const B4 = 493.88
 const C5 = 523.25
 const D5 = 587.33
 const E5 = 659.25
-const F5 = 698.46
 const G5 = 783.99
 const A5 = 880.00
 

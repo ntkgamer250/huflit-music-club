@@ -219,47 +219,70 @@ export const AboutScene: React.FC<AboutSceneProps> = ({ showReferenceOverlay = f
 
       {/* MOBILE / TABLET RESPONSIVE FALLBACK (< lg) */}
       <div className="lg:hidden relative z-20 max-w-xl mx-auto px-4 py-8 sm:py-12 flex flex-col items-center text-center">
-        <div className="flex items-center gap-2 mb-2.5">
-          <span className="w-6 h-[1px] bg-[#70D7FF]" />
-          <span className="text-[11px] tracking-[0.25em] text-[#70D7FF] font-semibold uppercase">
-            MUSIC • COMMUNITY
+        <div className="flex items-center gap-2 mb-2">
+          <span className="w-5 h-[1px] bg-[#70D7FF]" />
+          <span className="text-[10px] sm:text-xs tracking-[0.25em] text-[#70D7FF] font-semibold uppercase flex items-center gap-1.5">
+            <Sparkles className="w-3 h-3" />
+            MUSIC • COMMUNITY • PASSION
           </span>
-          <span className="w-6 h-[1px] bg-[#70D7FF]" />
+          <span className="w-5 h-[1px] bg-[#70D7FF]" />
         </div>
 
-        <h2 className="font-serif-display text-3xl sm:text-4xl text-white mb-3 tracking-tight">
-          WE ARE <span className="text-[#70D7FF]">THE SOUND</span>
+        <h2 className="font-serif-display text-3xl sm:text-4xl text-white mb-2.5 tracking-tight">
+          WE ARE <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#70D7FF] via-[#398BFF] to-[#70D7FF] glow-text-cyan">THE SOUND</span>
         </h2>
 
-        <p className="font-sans text-sm text-[#91A4BB] leading-relaxed mb-6 max-w-md">
-          CLB Âm nhạc là nơi những người trẻ yêu âm nhạc gặp gỡ, học hỏi và cùng nhau tạo nên những sân khấu đáng nhớ.
+        <p className="font-sans text-xs sm:text-sm text-[#91A4BB] leading-relaxed mb-6 max-w-md px-2">
+          CLB Âm nhạc là nơi những người trẻ yêu âm nhạc gặp gỡ, học hỏi và cùng nhau tạo nên những sân khấu đáng nhớ. Từ những buổi tập nhỏ đến những sự kiện lớn, mỗi thành viên đều góp một nhịp điệu riêng.
         </p>
 
-        {/* Stacked overlapping photo cluster for mobile */}
-        <div className="relative w-full max-w-sm aspect-[4/3] my-4">
-          <div className="absolute top-0 right-2 w-[68%] rounded-2xl overflow-hidden shadow-[0_15px_35px_rgba(0,0,0,0.85)] border border-[#70D7FF]/35 -rotate-2 z-10 aspect-[3/2]">
+        {/* Clean Responsive 3-Photo Showcase for Mobile */}
+        <div className="w-full space-y-3.5 my-2">
+          {/* Main Photo 1 */}
+          <div className="rounded-2xl overflow-hidden shadow-[0_12px_30px_rgba(0,0,0,0.85)] border border-[#70D7FF]/30 aspect-[16/10] bg-[#0A1A2F] relative group">
             <img
               src="/assets/music-club/scene-02-about/club_stage_performance.jpg"
-              alt="Biểu diễn sân khấu"
+              alt="Tiết mục biểu diễn nghệ thuật trên sân khấu"
               className="w-full h-full object-cover"
               loading="lazy"
             />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#050D1A]/90 via-transparent to-transparent flex items-end p-3">
+              <span className="text-[11px] font-medium text-white/95 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#70D7FF]" />
+                Tiết mục nghệ thuật sân khấu
+              </span>
+            </div>
           </div>
-          <div className="absolute bottom-2 left-2 w-[62%] rounded-2xl overflow-hidden shadow-[0_15px_35px_rgba(0,0,0,0.9)] border border-[#70D7FF]/40 rotate-2 z-20 aspect-[3/2]">
-            <img
-              src="/assets/music-club/scene-02-about/club_award_gold.jpg"
-              alt="Lễ trao giải Giải Vàng"
-              className="w-full h-full object-cover"
-              loading="lazy"
-            />
-          </div>
-          <div className="absolute bottom-0 right-4 w-[56%] rounded-2xl overflow-hidden shadow-[0_15px_35px_rgba(0,0,0,0.9)] border border-[#70D7FF]/40 -rotate-1 z-30 aspect-[3/2]">
-            <img
-              src="/assets/music-club/scene-02-about/club_youth_fest.jpg"
-              alt="Youth Fest 2026"
-              className="w-full h-full object-cover"
-              loading="lazy"
-            />
+
+          {/* Side-by-side Photo 2 & 3 */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl overflow-hidden shadow-[0_10px_25px_rgba(0,0,0,0.85)] border border-[#70D7FF]/30 aspect-[4/3] bg-[#0A1A2F] relative">
+              <img
+                src="/assets/music-club/scene-02-about/club_award_gold.jpg"
+                alt="Giải Vàng CLB Âm nhạc"
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#050D1A]/90 via-transparent to-transparent flex items-end p-2.5">
+                <span className="text-[10px] font-medium text-[#FFB45C] truncate">
+                  Giải Vàng HMC
+                </span>
+              </div>
+            </div>
+
+            <div className="rounded-xl overflow-hidden shadow-[0_10px_25px_rgba(0,0,0,0.85)] border border-[#70D7FF]/30 aspect-[4/3] bg-[#0A1A2F] relative">
+              <img
+                src="/assets/music-club/scene-02-about/club_youth_fest.jpg"
+                alt="Youth Fest 2026"
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#050D1A]/90 via-transparent to-transparent flex items-end p-2.5">
+                <span className="text-[10px] font-medium text-[#70D7FF] truncate">
+                  Youth Fest 2026
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

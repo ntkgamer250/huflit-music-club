@@ -12,6 +12,9 @@ import {
   Music,
   Heart,
   HelpCircle,
+  Flame,
+  Calendar,
+  Clock,
 } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { sound } from '../../lib/audioSynth'
@@ -131,14 +134,16 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
 
     // Casting Division
     if (!formData.castingDivision) {
-      newErrors.castingDivision = 'Vui lòng chọn mảng casting (Vocal hoặc Dancer).'
+      newErrors.castingDivision = 'Vui lòng chọn mảng casting (Hát, Nhảy hoặc Múa).'
     }
 
     // Casting Song / Track
     if (!formData.castingSong.trim()) {
       newErrors.castingSong =
         formData.castingDivision === 'vocal'
-          ? 'Vui lòng chọn 1 trong 4 bài hát bắt buộc cho phần Vocal Casting.'
+          ? 'Vui lòng nhập tên bài hát cá nhân tự chọn của bạn.'
+          : formData.castingDivision === 'traditional_dance'
+          ? 'Vui lòng nhập tên bài múa / tác phẩm bạn chọn cho phần Múa.'
           : 'Vui lòng nhập tên bài hát / track bạn chọn cho phần casting.'
     }
 
@@ -146,9 +151,11 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
     const urlRegex = /^https?:\/\/.+/i
     if (!formData.beatUrl.trim()) {
       newErrors.beatUrl =
-        formData.castingDivision === 'dancer'
-          ? 'Vui lòng cung cấp link nhạc casting (1–3 phút).'
-          : 'Vui lòng cung cấp link beat hoặc instrumental (1–3 phút).'
+        formData.castingDivision === 'vocal'
+          ? 'Vui lòng cung cấp link beat cho bài hát cá nhân tự chọn (1–3 phút).'
+          : formData.castingDivision === 'traditional_dance'
+          ? 'Vui lòng cung cấp link nhạc / beat múa (1–3 phút).'
+          : 'Vui lòng cung cấp link nhạc casting (1–3 phút).'
     } else if (!urlRegex.test(formData.beatUrl.trim())) {
       newErrors.beatUrl = 'Link chưa đúng định dạng URL (bắt đầu bằng http:// hoặc https://).'
     }
@@ -181,7 +188,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
     e.preventDefault()
 
     if (!validateForm()) {
-      sound.playFail()
+      sound.playError()
       // Scroll to first error
       const firstErrorEl = modalRef.current?.querySelector('[aria-invalid="true"]')
       firstErrorEl?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -208,7 +215,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
       }
     } catch (err) {
       console.error('Submission error:', err)
-      sound.playFail()
+      sound.playError()
     } finally {
       setIsSubmitting(false)
     }
@@ -279,11 +286,11 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Top Header Bar */}
-        <div className="shrink-0 flex items-center justify-between px-6 sm:px-10 py-4 bg-[#050D1A]/95 backdrop-blur-md border-b border-white/10">
-          <div className="flex items-center gap-3">
+        {/* Top Header Bar with safe area padding */}
+        <div className="shrink-0 flex items-center justify-between px-4 sm:px-10 py-3.5 sm:py-4 bg-[#050D1A]/95 backdrop-blur-md border-b border-white/10 pt-safe">
+          <div className="flex items-center gap-2.5 sm:gap-3">
             <span className="w-2 h-2 rounded-full bg-[#70D7FF] shadow-[0_0_8px_#70D7FF]" />
-            <span className="text-xs font-mono tracking-[0.28em] text-[#70D7FF] uppercase font-semibold">
+            <span className="text-[11px] sm:text-xs font-mono tracking-[0.2em] sm:tracking-[0.28em] text-[#70D7FF] uppercase font-semibold">
               HMC RECRUITMENT 2026
             </span>
           </div>
@@ -292,7 +299,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
             type="button"
             onClick={handleRequestClose}
             aria-label="Đóng biểu mẫu"
-            className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-[#91A4BB] hover:text-[#F4F7FB] border border-white/10 transition-all cursor-pointer"
+            className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-[#91A4BB] hover:text-[#F4F7FB] border border-white/10 transition-all cursor-pointer active:scale-95"
           >
             <X className="w-5 h-5" />
           </button>
@@ -306,25 +313,25 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
           />
         </div>
 
-        {/* Modal Body */}
+        {/* Modal Body with safe bottom padding */}
         <div
           data-lenis-prevent="true"
-          className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 sm:px-10 py-6 sm:py-8 custom-scrollbar"
+          className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-10 py-5 sm:py-8 custom-scrollbar pb-safe"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
           {isSubmitted ? (
             /* SUCCESS STATE */
-            <div className="text-center py-10 sm:py-16 max-w-xl mx-auto flex flex-col items-center animate-in fade-in zoom-in-95 duration-300">
-              <div className="w-20 h-20 rounded-full bg-[#70D7FF]/15 border border-[#70D7FF]/50 flex items-center justify-center text-[#70D7FF] shadow-[0_0_30px_rgba(112,215,255,0.4)] mb-6">
-                <CheckCircle2 className="w-12 h-12 stroke-[2.2]" />
+            <div className="text-center py-8 sm:py-16 max-w-xl mx-auto flex flex-col items-center animate-in fade-in zoom-in-95 duration-300">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#70D7FF]/15 border border-[#70D7FF]/50 flex items-center justify-center text-[#70D7FF] shadow-[0_0_30px_rgba(112,215,255,0.4)] mb-5 sm:mb-6">
+                <CheckCircle2 className="w-10 h-10 sm:w-12 sm:h-12 stroke-[2.2]" />
               </div>
 
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#398BFF]/15 border border-[#70D7FF]/30 text-xs font-semibold text-[#70D7FF] tracking-wider uppercase mb-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#398BFF]/15 border border-[#70D7FF]/30 text-[11px] sm:text-xs font-semibold text-[#70D7FF] tracking-wider uppercase mb-3">
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>MÃ HỒ SƠ: {submissionId}</span>
               </div>
 
-              <h3 className="font-serif-display text-3xl sm:text-4xl text-white tracking-tight leading-tight mb-3">
+              <h3 className="font-serif-display text-2xl sm:text-4xl text-white tracking-tight leading-tight mb-2.5 sm:mb-3">
                 ĐƠN ĐĂNG KÝ ĐÃ ĐƯỢC GỬI!
               </h3>
 
@@ -337,12 +344,17 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                 {formData.castingDivision === 'vocal' ? (
                   <>
                     <Mic className="w-4 h-4 text-[#70D7FF]" />
-                    <span>MẢNG CASTING: VOCAL CASTING</span>
+                    <span>MẢNG CASTING: HÁT (VOCAL)</span>
+                  </>
+                ) : formData.castingDivision === 'dancer' ? (
+                  <>
+                    <Activity className="w-4 h-4 text-[#70D7FF]" />
+                    <span>MẢNG CASTING: NHẢY (DANCE)</span>
                   </>
                 ) : (
                   <>
-                    <Activity className="w-4 h-4 text-[#70D7FF]" />
-                    <span>MẢNG CASTING: DANCER CASTING</span>
+                    <Flame className="w-4 h-4 text-[#FFB45C]" />
+                    <span>MẢNG CASTING: MÚA</span>
                   </>
                 )}
               </div>
@@ -371,11 +383,11 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
           ) : (
             /* FORM STATE */
             <form onSubmit={handleSubmit} noValidate className="space-y-8">
-              {/* Form Title Heading */}
-              <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-9">
+              {/* Form Title Heading & Recruitment Meta */}
+              <div className="text-center max-w-2xl mx-auto mb-7 sm:mb-8">
                 <h2
                   id={`${formId}-title`}
-                  className="font-sans font-extrabold text-3xl sm:text-4xl lg:text-[40px] text-white tracking-tight leading-[1.15] mb-3.5"
+                  className="font-sans font-extrabold text-3xl sm:text-4xl lg:text-[40px] text-white tracking-tight leading-[1.15] mb-2.5"
                 >
                   <span>TRỞ THÀNH MỘT PHẦN </span>
                   <br className="hidden sm:block" />
@@ -384,17 +396,27 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                     HMC
                   </span>
                 </h2>
-                <p className="font-sans text-sm sm:text-base text-[#91A4BB] leading-relaxed">
-                  Chọn vị trí bạn muốn casting và chia sẻ một chút về bản thân với chúng mình nhé.
-                </p>
-                <p className="text-xs text-[#70D7FF]/80 italic mt-1.5 flex items-center justify-center gap-1.5">
-                  <Music className="w-3.5 h-3.5 inline" />
-                  "Hãy chuẩn bị phần trình diễn mà bạn tự tin nhất."
+
+                <p className="font-sans text-sm sm:text-base text-[#91A4BB] leading-relaxed mb-3">
+                  Chọn lĩnh vực bạn muốn casting (Hát, Nhảy, Múa) và chia sẻ cùng chúng mình nhé.
                 </p>
 
-                {/* Casting Status Chip — Persistent visual confirmation directly below main form title */}
+                {/* Recruitment Period Quick Banner */}
+                <div className="inline-flex flex-wrap items-center justify-center gap-2 sm:gap-3 px-3.5 py-1.5 rounded-xl bg-[#09172B] border border-[#70D7FF]/25 text-xs text-[#C4D5E8] mb-3">
+                  <span className="flex items-center gap-1 text-[#70D7FF] font-semibold">
+                    <Clock className="w-3.5 h-3.5" />
+                    Đăng ký: 16g00 12/10 – 21g00 04/11/2026
+                  </span>
+                  <span className="text-[#70D7FF]/40 hidden sm:inline">•</span>
+                  <span className="flex items-center gap-1 text-[#B8CDE5]">
+                    <Calendar className="w-3.5 h-3.5 text-[#FFB45C]" />
+                    Casting: 06/11 & 07/11/2026
+                  </span>
+                </div>
+
+                {/* Casting Status Chip */}
                 {formData.castingDivision && (
-                  <div className="mt-4 sm:mt-4.5 flex justify-center">
+                  <div className="mt-2 flex justify-center">
                     <div
                       key={`status-chip-${formData.castingDivision}`}
                       className="animate-chip-fade select-none"
@@ -402,10 +424,10 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '8px',
-                        padding: '8px 13px',
+                        padding: '6px 14px',
                         borderRadius: '999px',
-                        background: 'rgba(70, 140, 255, 0.10)',
-                        border: '1px solid rgba(110, 195, 255, 0.22)',
+                        background: 'rgba(70, 140, 255, 0.12)',
+                        border: '1px solid rgba(110, 195, 255, 0.3)',
                         color: '#BFE8FF',
                         fontSize: '13px',
                         fontWeight: 600,
@@ -414,12 +436,17 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                       {formData.castingDivision === 'vocal' ? (
                         <>
                           <Mic className="w-4 h-4 text-[#70D7FF] shrink-0" />
-                          <span>Đang đăng ký: Vocal Casting</span>
+                          <span>Đang chọn: Hát (Vocal)</span>
+                        </>
+                      ) : formData.castingDivision === 'dancer' ? (
+                        <>
+                          <Activity className="w-4 h-4 text-[#70D7FF] shrink-0" />
+                          <span>Đang chọn: Nhảy (Dance)</span>
                         </>
                       ) : (
                         <>
-                          <Activity className="w-4 h-4 text-[#70D7FF] shrink-0" />
-                          <span>Đang đăng ký: Dancer Casting</span>
+                          <Flame className="w-4 h-4 text-[#FFB45C] shrink-0" />
+                          <span>Đang chọn: Múa</span>
                         </>
                       )}
                     </div>
@@ -557,23 +584,22 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                     02
                   </span>
                   <h3 className="text-sm font-semibold tracking-wider text-white uppercase font-sans">
-                    Mảng casting <span className="text-[#70D7FF]">*</span>
+                    Lĩnh vực tuyển chọn <span className="text-[#70D7FF]">*</span>
                   </h3>
                 </div>
 
                 <div
                   role="radiogroup"
-                  aria-label="Chọn mảng casting"
-                  className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                  aria-label="Chọn lĩnh vực casting"
+                  className="grid grid-cols-1 sm:grid-cols-3 gap-3.5"
                 >
-                  {/* Option 1: VOCAL */}
+                  {/* Option 1: HÁT (VOCAL) */}
                   <div
                     role="radio"
                     aria-checked={formData.castingDivision === 'vocal'}
                     tabIndex={0}
                     onClick={() => {
                       sound.playClick()
-                      // Preserves all user input, only switches division
                       setFormData((prev) => ({ ...prev, castingDivision: 'vocal' }))
                       if (errors.castingDivision) setErrors((prev) => ({ ...prev, castingDivision: undefined }))
                     }}
@@ -584,60 +610,58 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                         setFormData((prev) => ({ ...prev, castingDivision: 'vocal' }))
                       }
                     }}
-                    className={`relative p-5 rounded-[24px] cursor-pointer transition-all duration-250 border flex items-start gap-4 select-none ${
+                    className={`relative p-4 rounded-[22px] cursor-pointer transition-all duration-250 border flex flex-col justify-between select-none ${
                       formData.castingDivision === 'vocal'
-                        ? 'bg-[#0E2A4D]/90 border-[#70D7FF] shadow-[0_0_24px_rgba(112,215,255,0.25)] ring-1 ring-[#70D7FF]'
+                        ? 'bg-[#0E2A4D]/95 border-[#70D7FF] shadow-[0_0_24px_rgba(112,215,255,0.25)] ring-1 ring-[#70D7FF]'
                         : 'bg-[#0A1A33]/70 border-[#70D7FF]/15 hover:border-[#70D7FF]/40 hover:bg-[#0E2A4D]/50'
                     }`}
                   >
-                    <div
-                      className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border transition-all duration-200 ${
-                        formData.castingDivision === 'vocal'
-                          ? 'bg-[#398BFF] border-[#70D7FF] text-white shadow-[0_0_15px_#398BFF]'
-                          : 'bg-[#0C1D3A] border-[#70D7FF]/20 text-[#70D7FF]'
-                      }`}
-                    >
-                      <Mic className="w-6 h-6" />
-                    </div>
+                    <div className="flex items-start justify-between w-full mb-3">
+                      <div
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-200 ${
+                          formData.castingDivision === 'vocal'
+                            ? 'bg-[#398BFF] border-[#70D7FF] text-white shadow-[0_0_15px_#398BFF]'
+                            : 'bg-[#0C1D3A] border-[#70D7FF]/20 text-[#70D7FF]'
+                        }`}
+                      >
+                        <Mic className="w-5 h-5" />
+                      </div>
 
-                    <div className="flex-1 pr-6">
-                      <div className="flex items-center gap-2">
-                        <span className="font-serif-display text-xl font-bold text-white tracking-wide">
-                          VOCAL
-                        </span>
+                      <div
+                        className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+                          formData.castingDivision === 'vocal'
+                            ? 'border-[#70D7FF] bg-[#70D7FF] shadow-[0_0_10px_#70D7FF]'
+                            : 'border-white/30 bg-transparent'
+                        }`}
+                      >
                         {formData.castingDivision === 'vocal' && (
-                          <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-[#70D7FF]/20 text-[#70D7FF] border border-[#70D7FF]/35 font-semibold">
-                            VOCAL CASTING
-                          </span>
+                          <span className="w-2 h-2 rounded-full bg-[#050D1A]" />
                         )}
                       </div>
-                      <p className="text-xs sm:text-sm text-[#91A4BB] leading-relaxed mt-1">
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="font-serif-display text-lg font-bold text-white tracking-wide">
+                          HÁT
+                        </span>
+                        <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-[#70D7FF]/15 text-[#70D7FF] font-semibold">
+                          VOCAL
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#91A4BB] leading-relaxed">
                         Thể hiện màu giọng, cảm xúc và phong cách âm nhạc của bạn.
                       </p>
                     </div>
-
-                    {/* Radio Check Indicator */}
-                    <div
-                      className={`absolute top-5 right-5 w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
-                        formData.castingDivision === 'vocal'
-                          ? 'border-[#70D7FF] bg-[#70D7FF] shadow-[0_0_10px_#70D7FF]'
-                          : 'border-white/30 bg-transparent'
-                      }`}
-                    >
-                      {formData.castingDivision === 'vocal' && (
-                        <span className="w-2 h-2 rounded-full bg-[#050D1A]" />
-                      )}
-                    </div>
                   </div>
 
-                  {/* Option 2: DANCER */}
+                  {/* Option 2: NHẢY (DANCE) */}
                   <div
                     role="radio"
                     aria-checked={formData.castingDivision === 'dancer'}
                     tabIndex={0}
                     onClick={() => {
                       sound.playClick()
-                      // Preserves all user input, only switches division
                       setFormData((prev) => ({ ...prev, castingDivision: 'dancer' }))
                       if (errors.castingDivision) setErrors((prev) => ({ ...prev, castingDivision: undefined }))
                     }}
@@ -648,49 +672,110 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                         setFormData((prev) => ({ ...prev, castingDivision: 'dancer' }))
                       }
                     }}
-                    className={`relative p-5 rounded-[24px] cursor-pointer transition-all duration-250 border flex items-start gap-4 select-none ${
+                    className={`relative p-4 rounded-[22px] cursor-pointer transition-all duration-250 border flex flex-col justify-between select-none ${
                       formData.castingDivision === 'dancer'
-                        ? 'bg-[#0E2A4D]/90 border-[#70D7FF] shadow-[0_0_24px_rgba(112,215,255,0.25)] ring-1 ring-[#70D7FF]'
+                        ? 'bg-[#0E2A4D]/95 border-[#70D7FF] shadow-[0_0_24px_rgba(112,215,255,0.25)] ring-1 ring-[#70D7FF]'
                         : 'bg-[#0A1A33]/70 border-[#70D7FF]/15 hover:border-[#70D7FF]/40 hover:bg-[#0E2A4D]/50'
                     }`}
                   >
-                    <div
-                      className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border transition-all duration-200 ${
-                        formData.castingDivision === 'dancer'
-                          ? 'bg-[#398BFF] border-[#70D7FF] text-white shadow-[0_0_15px_#398BFF]'
-                          : 'bg-[#0C1D3A] border-[#70D7FF]/20 text-[#70D7FF]'
-                      }`}
-                    >
-                      <Activity className="w-6 h-6" />
-                    </div>
+                    <div className="flex items-start justify-between w-full mb-3">
+                      <div
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-200 ${
+                          formData.castingDivision === 'dancer'
+                            ? 'bg-[#398BFF] border-[#70D7FF] text-white shadow-[0_0_15px_#398BFF]'
+                            : 'bg-[#0C1D3A] border-[#70D7FF]/20 text-[#70D7FF]'
+                        }`}
+                      >
+                        <Activity className="w-5 h-5" />
+                      </div>
 
-                    <div className="flex-1 pr-6">
-                      <div className="flex items-center gap-2">
-                        <span className="font-serif-display text-xl font-bold text-white tracking-wide">
-                          DANCER
-                        </span>
+                      <div
+                        className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+                          formData.castingDivision === 'dancer'
+                            ? 'border-[#70D7FF] bg-[#70D7FF] shadow-[0_0_10px_#70D7FF]'
+                            : 'border-white/30 bg-transparent'
+                        }`}
+                      >
                         {formData.castingDivision === 'dancer' && (
-                          <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-[#70D7FF]/20 text-[#70D7FF] border border-[#70D7FF]/35 font-semibold">
-                            DANCER CASTING
-                          </span>
+                          <span className="w-2 h-2 rounded-full bg-[#050D1A]" />
                         )}
                       </div>
-                      <p className="text-xs sm:text-sm text-[#91A4BB] leading-relaxed mt-1">
-                        Thể hiện kỹ thuật, năng lượng và khả năng làm chủ sân khấu.
-                      </p>
                     </div>
 
-                    {/* Radio Check Indicator */}
-                    <div
-                      className={`absolute top-5 right-5 w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
-                        formData.castingDivision === 'dancer'
-                          ? 'border-[#70D7FF] bg-[#70D7FF] shadow-[0_0_10px_#70D7FF]'
-                          : 'border-white/30 bg-transparent'
-                      }`}
-                    >
-                      {formData.castingDivision === 'dancer' && (
-                        <span className="w-2 h-2 rounded-full bg-[#050D1A]" />
-                      )}
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="font-serif-display text-lg font-bold text-white tracking-wide">
+                          NHẢY
+                        </span>
+                        <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-[#70D7FF]/15 text-[#70D7FF] font-semibold">
+                          DANCE
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#91A4BB] leading-relaxed">
+                        K-Pop, Urban, Hiphop, Choreo, năng lượng làm chủ sân khấu.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Option 3: MÚA */}
+                  <div
+                    role="radio"
+                    aria-checked={formData.castingDivision === 'traditional_dance'}
+                    tabIndex={0}
+                    onClick={() => {
+                      sound.playClick()
+                      setFormData((prev) => ({ ...prev, castingDivision: 'traditional_dance' }))
+                      if (errors.castingDivision) setErrors((prev) => ({ ...prev, castingDivision: undefined }))
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === ' ' || e.key === 'Enter') {
+                        e.preventDefault()
+                        sound.playClick()
+                        setFormData((prev) => ({ ...prev, castingDivision: 'traditional_dance' }))
+                      }
+                    }}
+                    className={`relative p-4 rounded-[22px] cursor-pointer transition-all duration-250 border flex flex-col justify-between select-none ${
+                      formData.castingDivision === 'traditional_dance'
+                        ? 'bg-[#0E2A4D]/95 border-[#FFB45C] shadow-[0_0_24px_rgba(255,180,92,0.25)] ring-1 ring-[#FFB45C]'
+                        : 'bg-[#0A1A33]/70 border-[#70D7FF]/15 hover:border-[#FFB45C]/40 hover:bg-[#0E2A4D]/50'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between w-full mb-3">
+                      <div
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-200 ${
+                          formData.castingDivision === 'traditional_dance'
+                            ? 'bg-[#FFB45C] border-[#FFB45C] text-[#050D1A] shadow-[0_0_15px_#FFB45C]'
+                            : 'bg-[#0C1D3A] border-[#FFB45C]/30 text-[#FFB45C]'
+                        }`}
+                      >
+                        <Flame className="w-5 h-5" />
+                      </div>
+
+                      <div
+                        className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+                          formData.castingDivision === 'traditional_dance'
+                            ? 'border-[#FFB45C] bg-[#FFB45C] shadow-[0_0_10px_#FFB45C]'
+                            : 'border-white/30 bg-transparent'
+                        }`}
+                      >
+                        {formData.castingDivision === 'traditional_dance' && (
+                          <span className="w-2 h-2 rounded-full bg-[#050D1A]" />
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="font-serif-display text-lg font-bold text-white tracking-wide">
+                          MÚA
+                        </span>
+                        <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-[#FFB45C]/15 text-[#FFB45C] font-semibold">
+                          TRADITIONAL / CONTEMPORARY
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#91A4BB] leading-relaxed">
+                        Dân gian đương đại, múa truyền thống, ballet và kỹ thuật hình thể.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -706,218 +791,125 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                     03
                   </span>
                   <h3
-                    key={`title-${formData.castingDivision}`}
+                    key={`title-${formData.castingDivision || 'default'}`}
                     className="text-sm font-semibold tracking-wider text-white uppercase font-sans animate-division-change"
                   >
-                    {formData.castingDivision === 'vocal' ? 'VOCAL CASTING' : 'DANCER CASTING'}
+                    {formData.castingDivision === 'vocal'
+                      ? 'HÁT (VOCAL CASTING)'
+                      : formData.castingDivision === 'dancer'
+                      ? 'NHẢY (DANCE CASTING)'
+                      : formData.castingDivision === 'traditional_dance'
+                      ? 'MÚA (CASTING)'
+                      : 'PHẦN BIỂU DIỄN CASTING'}
                   </h3>
                 </div>
 
                 {/* 2. Dynamic Section Helper / Intro Text */}
                 <p
-                  key={`intro-${formData.castingDivision}`}
+                  key={`intro-${formData.castingDivision || 'default'}`}
                   className="text-xs sm:text-sm text-[#91A4BB] leading-relaxed animate-division-change"
                 >
                   {formData.castingDivision === 'vocal'
                     ? 'Hãy chuẩn bị một phần trình bày thể hiện màu giọng, cảm xúc và phong cách âm nhạc của bạn.'
+                    : formData.castingDivision === 'traditional_dance'
+                    ? 'Hãy chuẩn bị một phần trình diễn thể hiện sự dẻo dai, kỹ thuật hình thể, cảm xúc và khả năng cảm nhạc của bạn.'
                     : 'Hãy chuẩn bị một phần trình diễn thể hiện kỹ thuật, năng lượng và khả năng làm chủ sân khấu của bạn.'}
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 pt-1">
-                  {/* 3. Song / Track Field: Vocal (4 Mandatory Songs) vs Dancer (Free-text Track) */}
-                  {formData.castingDivision === 'vocal' ? (
-                    <div className="space-y-3 sm:col-span-2">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                        <label className="block text-sm font-medium text-[#B8CDE5]">
-                          Chọn 1 trong 4 bài hát bắt buộc khi đi casting <span className="text-[#70D7FF] font-bold">*</span>
-                        </label>
-                        <span className="text-xs text-[#70D7FF]/80 italic">
-                          (2 bài giọng nam & 2 bài giọng nữ)
-                        </span>
+                  {/* Vocal Mandatory Songs Notice Box */}
+                  {formData.castingDivision === 'vocal' && (
+                    <div className="p-4 sm:p-5 rounded-2xl bg-[#09172B]/95 border border-[#70D7FF]/35 space-y-3 sm:col-span-2 shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-[#70D7FF] uppercase tracking-wider font-mono">
+                        <Sparkles className="w-4 h-4 text-[#70D7FF]" />
+                        <span>QUY ĐỊNH BÀI HÁT BẮT BUỘC KHI ĐI CASTING</span>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                        {/* Nhóm Giọng Nam */}
-                        <div className="p-3.5 rounded-2xl bg-[#08172E]/80 border border-[#78B9F0]/15 space-y-2.5 shadow-inner">
-                          <div className="flex items-center gap-2 text-xs font-semibold text-[#70D7FF] uppercase tracking-wider font-mono">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#70D7FF] shadow-[0_0_6px_#70D7FF]" />
-                            <span>Giọng Nam</span>
-                          </div>
-
-                          <div className="space-y-2">
-                            {[
-                              { id: 'song-nam-1', title: 'Linh thiêng Việt Nam' },
-                              { id: 'song-nam-2', title: 'Khát vọng tuổi trẻ' },
-                            ].map((song) => {
-                              const isSelected = formData.castingSong === song.title
-                              return (
-                                <div
-                                  key={song.id}
-                                  role="radio"
-                                  aria-checked={isSelected}
-                                  tabIndex={0}
-                                  onClick={() => {
-                                    sound.playClick()
-                                    setFormData((prev) => ({ ...prev, castingSong: song.title }))
-                                    if (errors.castingSong) {
-                                      setErrors((prev) => ({ ...prev, castingSong: undefined }))
-                                    }
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === ' ' || e.key === 'Enter') {
-                                      e.preventDefault()
-                                      sound.playClick()
-                                      setFormData((prev) => ({ ...prev, castingSong: song.title }))
-                                      if (errors.castingSong) {
-                                        setErrors((prev) => ({ ...prev, castingSong: undefined }))
-                                      }
-                                    }
-                                  }}
-                                  className={`w-full flex items-center justify-between p-3 rounded-xl border text-sm transition-all duration-200 cursor-pointer select-none ${
-                                    isSelected
-                                      ? 'bg-[#0E2A4D] border-[#70D7FF] text-white shadow-[0_0_15px_rgba(112,215,255,0.25)] ring-1 ring-[#70D7FF]'
-                                      : 'bg-[#0C1D3A]/60 border-white/10 text-[#B8CDE5] hover:border-[#70D7FF]/40 hover:bg-[#0E2A4D]/50 hover:text-white'
-                                  }`}
-                                >
-                                  <div className="flex items-center gap-2.5">
-                                    <Music className={`w-4 h-4 shrink-0 ${isSelected ? 'text-[#70D7FF]' : 'text-[#91A4BB]'}`} />
-                                    <span className="font-medium">{song.title}</span>
-                                  </div>
-
-                                  <div
-                                    className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${
-                                      isSelected
-                                        ? 'border-[#70D7FF] bg-[#70D7FF] shadow-[0_0_8px_#70D7FF]'
-                                        : 'border-white/30 bg-transparent'
-                                    }`}
-                                  >
-                                    {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-[#050D1A]" />}
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </div>
-
-                        {/* Nhóm Giọng Nữ */}
-                        <div className="p-3.5 rounded-2xl bg-[#08172E]/80 border border-[#78B9F0]/15 space-y-2.5 shadow-inner">
-                          <div className="flex items-center gap-2 text-xs font-semibold text-[#FFB45C] uppercase tracking-wider font-mono">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#FFB45C] shadow-[0_0_6px_#FFB45C]" />
-                            <span>Giọng Nữ</span>
-                          </div>
-
-                          <div className="space-y-2">
-                            {[
-                              { id: 'song-nu-1', title: 'Tàu anh qua núi' },
-                              { id: 'song-nu-2', title: 'Đất phương Nam' },
-                            ].map((song) => {
-                              const isSelected = formData.castingSong === song.title
-                              return (
-                                <div
-                                  key={song.id}
-                                  role="radio"
-                                  aria-checked={isSelected}
-                                  tabIndex={0}
-                                  onClick={() => {
-                                    sound.playClick()
-                                    setFormData((prev) => ({ ...prev, castingSong: song.title }))
-                                    if (errors.castingSong) {
-                                      setErrors((prev) => ({ ...prev, castingSong: undefined }))
-                                    }
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === ' ' || e.key === 'Enter') {
-                                      e.preventDefault()
-                                      sound.playClick()
-                                      setFormData((prev) => ({ ...prev, castingSong: song.title }))
-                                      if (errors.castingSong) {
-                                        setErrors((prev) => ({ ...prev, castingSong: undefined }))
-                                      }
-                                    }
-                                  }}
-                                  className={`w-full flex items-center justify-between p-3 rounded-xl border text-sm transition-all duration-200 cursor-pointer select-none ${
-                                    isSelected
-                                      ? 'bg-[#0E2A4D] border-[#70D7FF] text-white shadow-[0_0_15px_rgba(112,215,255,0.25)] ring-1 ring-[#70D7FF]'
-                                      : 'bg-[#0C1D3A]/60 border-white/10 text-[#B8CDE5] hover:border-[#70D7FF]/40 hover:bg-[#0E2A4D]/50 hover:text-white'
-                                  }`}
-                                >
-                                  <div className="flex items-center gap-2.5">
-                                    <Music className={`w-4 h-4 shrink-0 ${isSelected ? 'text-[#FFB45C]' : 'text-[#91A4BB]'}`} />
-                                    <span className="font-medium">{song.title}</span>
-                                  </div>
-
-                                  <div
-                                    className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${
-                                      isSelected
-                                        ? 'border-[#70D7FF] bg-[#70D7FF] shadow-[0_0_8px_#70D7FF]'
-                                        : 'border-white/30 bg-transparent'
-                                    }`}
-                                  >
-                                    {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-[#050D1A]" />}
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      </div>
-
-                      {errors.castingSong && (
-                        <p className="text-xs text-[#FF6B6B] flex items-center gap-1 mt-1">
-                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                          <span>{errors.castingSong}</span>
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    /* DANCER / DEFAULT: Free-text Track Field */
-                    <div className="space-y-1.5">
-                      <label
-                        htmlFor={`${formId}-song`}
-                        className="block text-sm font-medium text-[#B8CDE5]"
-                      >
-                        Bài hát / track bạn chọn khi đi casting? <span className="text-[#70D7FF] font-bold">*</span>
-                      </label>
-                      <input
-                        id={`${formId}-song`}
-                        type="text"
-                        required
-                        placeholder="Ví dụ: Supernova – aespa"
-                        value={formData.castingSong}
-                        onChange={(e) => {
-                          setFormData({ ...formData, castingSong: e.target.value })
-                          if (errors.castingSong) setErrors({ ...errors, castingSong: undefined })
-                        }}
-                        aria-invalid={Boolean(errors.castingSong)}
-                        className={`w-full h-[48px] sm:h-[52px] px-4 rounded-xl sm:rounded-2xl bg-[#0C1D3A]/72 border text-base sm:text-sm text-[#F4F7FB] outline-none transition-all placeholder:text-[#91A4BB]/45 ${
-                          errors.castingSong
-                            ? 'border-[#FF6B6B] focus:border-[#FF6B6B] focus:ring-2 focus:ring-[#FF6B6B]/20'
-                            : 'border-[#78B9F0]/15 focus:border-[#64C3FF]/70 focus:ring-2 focus:ring-[#3C9BFF]/10'
-                        }`}
-                      />
-                      <p
-                        key={`song-helper-${formData.castingDivision || 'default'}`}
-                        className="text-xs text-[#91A4BB]/70 animate-division-change"
-                      >
-                        Track bạn sẽ sử dụng cho phần Dancer Casting.
+                      <p className="text-xs sm:text-sm text-[#F4F7FB]/95 leading-relaxed">
+                        Ban giám khảo sẽ <span className="text-[#70D7FF] font-bold">chọn ngẫu nhiên 1 trong 3 bài hát</span> sau và bạn <span className="text-[#FFB45C] font-bold">bắt buộc cần chuẩn bị trước ở nhà</span>:
                       </p>
-                      {errors.castingSong && (
-                        <p className="text-xs text-[#FF6B6B] flex items-center gap-1 mt-1">
-                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                          <span>{errors.castingSong}</span>
-                        </p>
-                      )}
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                        <div className="p-3 rounded-xl bg-[#050D1A]/80 border border-[#70D7FF]/25 flex items-center gap-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm">
+                          <Music className="w-4 h-4 text-[#70D7FF] shrink-0" />
+                          <span>1. Linh thiêng Việt Nam</span>
+                        </div>
+                        <div className="p-3 rounded-xl bg-[#050D1A]/80 border border-[#70D7FF]/25 flex items-center gap-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm">
+                          <Music className="w-4 h-4 text-[#70D7FF] shrink-0" />
+                          <span>2. Khát vọng tuổi trẻ</span>
+                        </div>
+                        <div className="p-3 rounded-xl bg-[#050D1A]/80 border border-[#70D7FF]/25 flex items-center gap-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm">
+                          <Music className="w-4 h-4 text-[#70D7FF] shrink-0" />
+                          <span>3. Tàu anh qua núi</span>
+                        </div>
+                      </div>
                     </div>
                   )}
 
-                  {/* 4. Beat / Audio Link Field (Dynamic Wording) */}
-                  <div className={`space-y-1.5 ${formData.castingDivision === 'vocal' ? 'sm:col-span-2' : ''}`}>
+                  {/* Song / Track / Piece Name Input Field */}
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor={`${formId}-song`}
+                      className="block text-sm font-medium text-[#B8CDE5]"
+                    >
+                      {formData.castingDivision === 'vocal'
+                        ? 'Bài hát cá nhân tự chọn (1–3 phút)'
+                        : formData.castingDivision === 'traditional_dance'
+                        ? 'Tác phẩm / bài múa bạn chọn khi đi casting'
+                        : 'Bài hát / track nhảy bạn chọn khi đi casting'}{' '}
+                      <span className="text-[#70D7FF] font-bold">*</span>
+                    </label>
+                    <input
+                      id={`${formId}-song`}
+                      type="text"
+                      required
+                      placeholder={
+                        formData.castingDivision === 'vocal'
+                          ? 'Ví dụ: Ngày chưa giông bão, Nàng thơ, Có chàng trai viết lên cây...'
+                          : formData.castingDivision === 'traditional_dance'
+                          ? 'Ví dụ: Múa Dân Gian – Cò Lả, Múa Đương Đại...'
+                          : 'Ví dụ: Supernova – aespa, Hiphop Choreography...'
+                      }
+                      value={formData.castingSong}
+                      onChange={(e) => {
+                        setFormData({ ...formData, castingSong: e.target.value })
+                        if (errors.castingSong) setErrors({ ...errors, castingSong: undefined })
+                      }}
+                      aria-invalid={Boolean(errors.castingSong)}
+                      className={`w-full h-[48px] sm:h-[52px] px-4 rounded-xl sm:rounded-2xl bg-[#0C1D3A]/72 border text-base sm:text-sm text-[#F4F7FB] outline-none transition-all placeholder:text-[#91A4BB]/45 ${
+                        errors.castingSong
+                          ? 'border-[#FF6B6B] focus:border-[#FF6B6B] focus:ring-2 focus:ring-[#FF6B6B]/20'
+                          : 'border-[#78B9F0]/15 focus:border-[#64C3FF]/70 focus:ring-2 focus:ring-[#3C9BFF]/10'
+                      }`}
+                    />
+                    <p
+                      key={`song-helper-${formData.castingDivision || 'default'}`}
+                      className="text-xs text-[#91A4BB]/70 animate-division-change"
+                    >
+                      {formData.castingDivision === 'vocal'
+                        ? 'Bài hát cá nhân 1–3 phút bạn sẽ thể hiện trước Ban giám khảo.'
+                        : formData.castingDivision === 'traditional_dance'
+                        ? 'Tác phẩm múa bạn sẽ sử dụng cho phần Casting.'
+                        : 'Track bạn sẽ sử dụng cho phần Dancer Casting.'}
+                    </p>
+                    {errors.castingSong && (
+                      <p className="text-xs text-[#FF6B6B] flex items-center gap-1 mt-1">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>{errors.castingSong}</span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Beat / Audio Link Input Field */}
+                  <div className="space-y-1.5">
                     <label
                       htmlFor={`${formId}-beat`}
                       className="block text-sm font-medium text-[#B8CDE5]"
                     >
                       {formData.castingDivision === 'vocal'
-                        ? 'Link beat (1–3 phút)'
+                        ? 'Link beat bài hát cá nhân tự chọn (1–3 phút)'
+                        : formData.castingDivision === 'traditional_dance'
+                        ? 'Link nhạc / beat múa (1–3 phút)'
                         : 'Link nhạc casting (1–3 phút)'}{' '}
                       <span className="text-[#70D7FF] font-bold">*</span>
                     </label>
@@ -943,7 +935,9 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                       className="text-xs text-[#91A4BB]/70 animate-division-change"
                     >
                       {formData.castingDivision === 'vocal'
-                        ? 'Vui lòng gửi beat hoặc instrumental cho bài hát bạn đã chọn.'
+                        ? 'Vui lòng gửi beat hoặc instrumental cho bài hát cá nhân bạn đã chọn.'
+                        : formData.castingDivision === 'traditional_dance'
+                        ? 'Vui lòng gửi đoạn nhạc bạn sẽ sử dụng cho phần biểu diễn Múa.'
                         : 'Vui lòng gửi đoạn nhạc bạn sẽ sử dụng cho phần trình diễn Dancer.'}
                     </p>
                     {errors.beatUrl && (
@@ -983,7 +977,6 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                       type="button"
                       onClick={() => {
                         sound.playClick()
-                        // Preserves existing performanceUrl in state so it can be restored if user switches back to CÓ
                         setFormData((prev) => ({
                           ...prev,
                           hasPerformanceExperience: false,
@@ -1071,7 +1064,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                       htmlFor={`${formId}-passion`}
                       className="block text-sm font-medium text-[#B8CDE5]"
                     >
-                      Chia sẻ niềm yêu thích âm nhạc của bạn với HMC nhé{' '}
+                      Chia sẻ niềm yêu thích âm nhạc / nghệ thuật của bạn với HMC nhé{' '}
                       <span className="text-[#70D7FF] font-bold">*</span>
                     </label>
                     <span
@@ -1087,7 +1080,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                     </span>
                   </div>
 
-                  {/* Dynamic placeholder personalized for Vocal vs Dancer */}
+                  {/* Dynamic placeholder personalized for Vocal vs Dancer vs Múa */}
                   <textarea
                     id={`${formId}-passion`}
                     rows={4}
@@ -1095,6 +1088,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                     placeholder={
                       formData.castingDivision === 'vocal'
                         ? 'Bạn yêu thích điều gì ở việc ca hát và âm nhạc? Bạn mong muốn trải nghiệm điều gì khi tham gia HMC?'
+                        : formData.castingDivision === 'traditional_dance'
+                        ? 'Bạn yêu thích điều gì ở bộ môn múa và nghệ thuật biểu diễn? Bạn mong muốn trải nghiệm điều gì khi tham gia HMC?'
                         : 'Điều gì khiến bạn yêu thích nhảy và biểu diễn? Bạn mong muốn trải nghiệm điều gì khi tham gia HMC?'
                     }
                     value={formData.passion}
@@ -1121,18 +1116,19 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
               {/* ---------------------------------------------------- */}
               {/* SUBMIT AREA */}
               {/* ---------------------------------------------------- */}
-              <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 pb-2">
                 <p className="text-xs text-[#91A4BB] flex items-center gap-1.5 text-center sm:text-left">
                   <HelpCircle className="w-3.5 h-3.5 text-[#70D7FF] shrink-0" />
                   <span>Kiểm tra lại thông tin trước khi gửi nhé.</span>
                 </p>
 
-                <div className="flex items-center gap-3 w-full sm:w-auto">
+                <div className="flex flex-col-reverse sm:flex-row items-center gap-3 w-full sm:w-auto">
                   <button
                     type="button"
                     onClick={handleRequestClose}
                     disabled={isSubmitting}
-                    className="px-5 py-3.5 rounded-full text-xs sm:text-sm font-semibold text-[#91A4BB] hover:text-white hover:bg-white/5 transition-all cursor-pointer"
+                    className="w-full sm:w-auto px-6 py-3.5 rounded-full text-xs sm:text-sm font-semibold text-[#91A4BB] hover:text-white hover:bg-white/5 transition-all cursor-pointer text-center active:scale-95"
+                    style={{ minHeight: '48px' }}
                   >
                     Hủy
                   </button>
@@ -1140,8 +1136,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 sm:flex-initial btn-primary-glow flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-full text-sm font-semibold text-white tracking-wide cursor-pointer shadow-[0_0_25px_rgba(57,139,255,0.6)] disabled:opacity-60 disabled:cursor-not-allowed"
-                    style={{ minHeight: '54px' }}
+                    className="w-full sm:w-auto btn-primary-glow flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-full text-sm font-semibold text-white tracking-wide cursor-pointer shadow-[0_0_25px_rgba(57,139,255,0.6)] disabled:opacity-60 disabled:cursor-not-allowed active:scale-98"
+                    style={{ minHeight: '52px' }}
                   >
                     {isSubmitting ? (
                       <>

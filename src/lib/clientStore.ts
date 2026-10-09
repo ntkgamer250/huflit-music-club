@@ -91,15 +91,31 @@ export const INITIAL_SAMPLE_APPLICATIONS: ApplicationItem[] = [
     email: 'phuong.dang@student.edu.vn',
     studentId: '23DH606789',
     castingDivision: 'vocal',
-    castingSong: 'Đất phương Nam',
-    beatUrl: 'https://drive.google.com/file/d/sample_dat_phuong_nam/view',
+    castingSong: 'Ngày chưa giông bão',
+    beatUrl: 'https://drive.google.com/file/d/sample_ngay_chua_giong_bao/view',
     hasPerformanceExperience: true,
     performanceUrl: 'https://youtube.com/watch?v=sample_phuong_dan_ca',
-    passion: 'Âm hưởng dân gian đương đại luôn là niềm đam mê lớn nhất của mình. Hy vọng có cơ hội cống hiến màu giọng đặc trưng này cho các tiết mục đặc sắc của CLB.',
+    passion: 'Âm hưởng đương đại luôn là niềm đam mê lớn nhất của mình. Hy vọng có cơ hội cống hiến màu giọng đặc trưng này cho các tiết mục đặc sắc của CLB.',
     status: 'shortlisted',
     adminNote: 'Màu giọng dân ca ngọt ngào, cảm xúc rất sâu lắng.',
     createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'HMC-2026-007',
+    fullName: 'Hoàng Yến Nhi',
+    email: 'yennhi.hoang@student.edu.vn',
+    studentId: '24DH707890',
+    castingDivision: 'traditional_dance',
+    castingSong: 'Múa Dân Gian – Cò Lả',
+    beatUrl: 'https://youtube.com/watch?v=sample_mua_dan_gian',
+    hasPerformanceExperience: true,
+    performanceUrl: 'https://tiktok.com/@yennhi_dance/video/987654321',
+    passion: 'Em theo học múa dân gian và đương đại được 3 năm. Em muốn mang nét đẹp truyền thống kết hợp biểu diễn đương đại vào các sân khấu văn nghệ trẻ trung của HMC.',
+    status: 'shortlisted',
+    adminNote: 'Độ dẻo tốt, biểu cảm sân khấu xuất sắc. Rất tiềm năng cho ban Múa.',
+    createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
   },
 ]
 
@@ -140,7 +156,7 @@ export function addClientApplication(data: RecruitmentFormData): ApplicationItem
     fullName: data.fullName.trim(),
     email: data.email.trim(),
     studentId: data.studentId.trim().toUpperCase(),
-    castingDivision: (data.castingDivision || 'vocal') as 'vocal' | 'dancer',
+    castingDivision: (data.castingDivision || 'vocal') as 'vocal' | 'dancer' | 'traditional_dance',
     castingSong: data.castingSong.trim(),
     beatUrl: data.beatUrl.trim(),
     hasPerformanceExperience: Boolean(data.hasPerformanceExperience),
@@ -188,6 +204,7 @@ export function queryClientApplications(params: ApplicationQueryParams = {}): Ap
     total: allApps.length,
     vocal: allApps.filter((a) => a.castingDivision === 'vocal').length,
     dancer: allApps.filter((a) => a.castingDivision === 'dancer').length,
+    traditional_dance: allApps.filter((a) => a.castingDivision === 'traditional_dance').length,
     new: allApps.filter((a) => a.status === 'new').length,
     reviewing: allApps.filter((a) => a.status === 'reviewing').length,
     shortlisted: allApps.filter((a) => a.status === 'shortlisted').length,
@@ -229,14 +246,35 @@ export function queryClientApplications(params: ApplicationQueryParams = {}): Ap
 
   // 5. Sorting
   const sort = params.sort || 'created_desc'
+
+  const getVietnameseGivenName = (fullName: string): string => {
+    const parts = fullName.trim().split(/\s+/)
+    return parts[parts.length - 1] || ''
+  }
+
+  const compareVietnameseNames = (a: string, b: string): number => {
+    const nameA = getVietnameseGivenName(a)
+    const nameB = getVietnameseGivenName(b)
+    const nameCmp = nameA.localeCompare(nameB, 'vi', { sensitivity: 'base' })
+    if (nameCmp !== 0) return nameCmp
+    return a.localeCompare(b, 'vi', { sensitivity: 'base' })
+  }
+
   filtered.sort((a, b) => {
     switch (sort) {
       case 'created_asc':
         return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       case 'name_asc':
-        return a.fullName.localeCompare(b.fullName, 'vi')
+        return compareVietnameseNames(a.fullName, b.fullName)
       case 'name_desc':
-        return b.fullName.localeCompare(a.fullName, 'vi')
+        return compareVietnameseNames(b.fullName, a.fullName)
+      case 'division_name_asc': {
+        const divOrder: Record<string, number> = { vocal: 1, dancer: 2, traditional_dance: 3 }
+        const orderA = divOrder[a.castingDivision] || 99
+        const orderB = divOrder[b.castingDivision] || 99
+        if (orderA !== orderB) return orderA - orderB
+        return compareVietnameseNames(a.fullName, b.fullName)
+      }
       case 'status':
         return a.status.localeCompare(b.status)
       case 'created_desc':
@@ -283,13 +321,26 @@ export function exportClientCsv(params: ApplicationQueryParams = {}): void {
     'Ghi chú admin',
   ]
 
+  const getDivisionLabel = (div: string) => {
+    switch (div) {
+      case 'vocal':
+        return 'Hát (Vocal)'
+      case 'dancer':
+        return 'Nhảy (Dance)'
+      case 'traditional_dance':
+        return 'Múa'
+      default:
+        return div
+    }
+  }
+
   const rows = apps.map((app, index) => [
     index + 1,
     `"${app.id}"`,
     `"${app.fullName.replace(/"/g, '""')}"`,
     `"${app.studentId}"`,
     `"${app.email}"`,
-    `"${app.castingDivision === 'vocal' ? 'Vocal Casting' : 'Dancer Casting'}"`,
+    `"${getDivisionLabel(app.castingDivision)}"`,
     `"${app.castingSong.replace(/"/g, '""')}"`,
     `"${app.beatUrl.replace(/"/g, '""')}"`,
     `"${app.hasPerformanceExperience ? 'Có kinh nghiệm' : 'Chưa có'}"`,

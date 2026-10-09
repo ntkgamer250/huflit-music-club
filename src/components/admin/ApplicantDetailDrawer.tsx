@@ -209,18 +209,25 @@ export const ApplicantDetailDrawer: React.FC<ApplicantDetailDrawerProps> = ({
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border ${
                   application.castingDivision === 'vocal'
                     ? 'bg-[#398BFF]/20 text-[#70D7FF] border-[#70D7FF]/40'
-                    : 'bg-[#A855F7]/20 text-[#D8B4FE] border-[#C084FC]/40'
+                    : application.castingDivision === 'dancer'
+                    ? 'bg-[#A855F7]/20 text-[#D8B4FE] border-[#C084FC]/40'
+                    : 'bg-[#F43F5E]/20 text-[#FDA4AF] border-[#FB7185]/40'
                 }`}
               >
                 {application.castingDivision === 'vocal' ? (
                   <>
                     <Mic className="w-3.5 h-3.5" />
-                    <span>VOCAL CASTING</span>
+                    <span>HÁT (VOCAL)</span>
+                  </>
+                ) : application.castingDivision === 'dancer' ? (
+                  <>
+                    <Activity className="w-3.5 h-3.5" />
+                    <span>NHẢY (DANCE)</span>
                   </>
                 ) : (
                   <>
-                    <Activity className="w-3.5 h-3.5" />
-                    <span>DANCER CASTING</span>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>MÚA</span>
                   </>
                 )}
               </div>
@@ -281,7 +288,11 @@ export const ApplicantDetailDrawer: React.FC<ApplicantDetailDrawerProps> = ({
 
             <div className="space-y-1">
               <span className="text-xs text-[#91A4BB]">
-                {application.castingDivision === 'vocal' ? 'Bài hát casting đã chọn:' : 'Bài hát / Track casting:'}
+                {application.castingDivision === 'vocal'
+                  ? 'Bài hát casting đã chọn:'
+                  : application.castingDivision === 'dancer'
+                  ? 'Bài nhảy / Track casting:'
+                  : 'Tác phẩm múa / Nhạc nền:'}
               </span>
               <p className="text-sm font-semibold text-white">{application.castingSong}</p>
             </div>

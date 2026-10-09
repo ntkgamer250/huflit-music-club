@@ -22,7 +22,7 @@ function sendJson(res: ServerResponse, statusCode: number, data: any, headers?: 
 function parseJsonBody(req: IncomingMessage): Promise<any> {
   return new Promise((resolve, reject) => {
     let body = ''
-    req.on('data', (chunk) => {
+    req.on('data', (chunk: Buffer | string) => {
       body += chunk
       if (body.length > 1e6) {
         req.destroy()
@@ -36,11 +36,11 @@ function parseJsonBody(req: IncomingMessage): Promise<any> {
       }
       try {
         resolve(JSON.parse(body))
-      } catch (err) {
+      } catch {
         reject(new Error('Invalid JSON format'))
       }
     })
-    req.on('error', (err) => reject(err))
+    req.on('error', (err: Error) => reject(err))
   })
 }
 
@@ -251,7 +251,7 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
         params.push(searchPattern, searchPattern, searchPattern)
       }
 
-      if (division !== 'all' && (division === 'vocal' || division === 'dancer')) {
+      if (division !== 'all' && (division === 'vocal' || division === 'dancer' || division === 'traditional_dance')) {
         query += ` AND casting_division = ?`
         params.push(division)
       }
@@ -280,6 +280,19 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
         return `"${str}"`
       }
 
+      const getDivisionLabel = (div: string) => {
+        switch (div) {
+          case 'vocal':
+            return 'Hát (Vocal)'
+          case 'dancer':
+            return 'Nhảy (Dance)'
+          case 'traditional_dance':
+            return 'Múa'
+          default:
+            return div
+        }
+      }
+
       const csvLines = [headers.join(',')]
       rows.forEach((row, index) => {
         csvLines.push(
@@ -289,7 +302,7 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
             escapeCsv(row.full_name),
             escapeCsv(row.student_id),
             escapeCsv(row.email),
-            escapeCsv(row.casting_division === 'vocal' ? 'Vocal Casting' : 'Dancer Casting'),
+            escapeCsv(getDivisionLabel(row.casting_division)),
             escapeCsv(row.casting_song),
             escapeCsv(row.beat_url),
             escapeCsv(row.has_performance_experience === 1 ? 'Có' : 'Chưa'),
@@ -408,7 +421,7 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
       const experience = parsedUrl.searchParams.get('experience')?.trim().toLowerCase() || 'all'
       const sort = parsedUrl.searchParams.get('sort')?.trim().toLowerCase() || 'newest'
       const page = Math.max(1, parseInt(parsedUrl.searchParams.get('page') || '1', 10))
-      const limit = Math.max(1, Math.min(100, parseInt(parsedUrl.searchParams.get('limit') || '20', 10)))
+      const limit = Math.max(1, Math.min(2000, parseInt(parsedUrl.searchParams.get('limit') || '20', 10)))
       const offset = (page - 1) * limit
 
       // Base query
@@ -421,7 +434,7 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
         params.push(pattern, pattern, pattern)
       }
 
-      if (division !== 'all' && (division === 'vocal' || division === 'dancer')) {
+      if (division !== 'all' && (division === 'vocal' || division === 'dancer' || division === 'traditional_dance')) {
         whereClause += ` AND casting_division = ?`
         params.push(division)
       }
@@ -445,6 +458,8 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
         orderClause = 'ORDER BY full_name ASC'
       } else if (sort === 'name_desc') {
         orderClause = 'ORDER BY full_name DESC'
+      } else if (sort === 'division_name_asc') {
+        orderClause = `ORDER BY CASE casting_division WHEN 'vocal' THEN 1 WHEN 'dancer' THEN 2 WHEN 'traditional_dance' THEN 3 ELSE 4 END ASC, full_name ASC`
       } else if (sort === 'mssv_asc') {
         orderClause = 'ORDER BY student_id ASC'
       } else if (sort === 'mssv_desc') {
@@ -470,6 +485,7 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
           COUNT(*) as total,
           SUM(CASE WHEN casting_division = 'vocal' THEN 1 ELSE 0 END) as vocal,
           SUM(CASE WHEN casting_division = 'dancer' THEN 1 ELSE 0 END) as dancer,
+          SUM(CASE WHEN casting_division = 'traditional_dance' THEN 1 ELSE 0 END) as traditional_dance,
           SUM(CASE WHEN status = 'new' THEN 1 ELSE 0 END) as new_count,
           SUM(CASE WHEN status = 'reviewing' THEN 1 ELSE 0 END) as reviewing,
           SUM(CASE WHEN status = 'shortlisted' THEN 1 ELSE 0 END) as shortlisted,
@@ -505,6 +521,7 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
           total: countsAll.total || 0,
           vocal: countsAll.vocal || 0,
           dancer: countsAll.dancer || 0,
+          traditional_dance: countsAll.traditional_dance || 0,
           new: countsAll.new_count || 0,
           reviewing: countsAll.reviewing || 0,
           shortlisted: countsAll.shortlisted || 0,

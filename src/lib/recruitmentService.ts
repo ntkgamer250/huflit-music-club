@@ -4,7 +4,7 @@ export interface RecruitmentFormData {
   fullName: string
   email: string
   studentId: string
-  castingDivision: 'vocal' | 'dancer' | null
+  castingDivision: 'vocal' | 'dancer' | 'traditional_dance' | null
   castingSong: string
   beatUrl: string
   hasPerformanceExperience: boolean | null

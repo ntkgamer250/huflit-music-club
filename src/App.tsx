@@ -3,10 +3,8 @@ import { Navbar } from './components/navigation/Navbar'
 import { HeroScene } from './components/scenes/HeroScene'
 import { AboutScene } from './components/scenes/AboutScene'
 import { FamilyScene } from './components/scenes/FamilyScene'
-import { MiniGameScene } from './components/scenes/MiniGameScene'
-import { ContactScene } from './components/scenes/ContactScene'
+import { CastingGuideScene } from './components/scenes/CastingGuideScene'
 import { SoundWaveLayer } from './components/effects/SoundWaveLayer'
-import { PaperPlaneTransition } from './components/effects/PaperPlaneTransition'
 import { RegistrationModal } from './components/common/RegistrationModal'
 import { AdminLoginPage } from './components/admin/AdminLoginPage'
 import { AdminApplicationsPage } from './components/admin/AdminApplicationsPage'
@@ -580,7 +578,7 @@ export function App() {
         }
       )
 
-      // CASTING -> MINI GAME EXIT TRANSITION (last 18-20vh)
+      // CASTING -> CASTING GUIDE EXIT TRANSITION (last 18-20vh)
       gsap.to('.casting-photo-1-wrap', {
         y: -18,
         ease: 'none',
@@ -630,271 +628,18 @@ export function App() {
       })
 
       // ==========================================
-      // 5. MINI GAME ENTRY & PARALLAX
+      // 6. CASTING GUIDE SCENE ENTRY (Audition Stage Mood)
       // ==========================================
-      // Atmosphere build-up
+      // Casting Guide Background
       gsap.fromTo(
-        '.minigame-bg',
-        { opacity: 0.45 },
-        {
-          opacity: 1,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: '#minigame',
-            start: 'top 85%',
-            end: 'top 45%',
-            scrub: true,
-            invalidateOnRefresh: true,
-          },
-        }
-      )
-
-      gsap.fromTo(
-        '.minigame-lights',
-        { opacity: 0.25 },
-        {
-          opacity: 0.62,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: '#minigame',
-            start: 'top 85%',
-            end: 'top 45%',
-            scrub: true,
-            invalidateOnRefresh: true,
-          },
-        }
-      )
-
-      gsap.fromTo(
-        '.minigame-smoke',
-        { opacity: 0.25 },
-        {
-          opacity: 0.58,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: '#minigame',
-            start: 'top 85%',
-            end: 'top 45%',
-            scrub: true,
-            invalidateOnRefresh: true,
-          },
-        }
-      )
-
-      // Title Reveal
-      gsap.fromTo(
-        '.minigame-title-group',
-        { autoAlpha: 0, y: 25 },
-        {
-          autoAlpha: 1,
-          y: 0,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: '#minigame',
-            start: 'top 80%',
-            end: 'top 50%',
-            scrub: true,
-            invalidateOnRefresh: true,
-          },
-        }
-      )
-
-      // Vinyl Disc Reveal & Scale
-      gsap.fromTo(
-        '.minigame-vinyl',
-        { opacity: 0.25, scale: 0.94 },
-        {
-          opacity: 0.60,
-          scale: 1,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: '#minigame',
-            start: 'top 85%',
-            end: 'top 45%',
-            scrub: true,
-            invalidateOnRefresh: true,
-          },
-        }
-      )
-
-      // Orbital Soundwave
-      gsap.fromTo(
-        '.minigame-soundwave',
-        { opacity: 0.30, scale: 0.98 },
-        {
-          opacity: 0.65,
-          scale: 1.02,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: '#minigame',
-            start: 'top 80%',
-            end: 'top 40%',
-            scrub: true,
-            invalidateOnRefresh: true,
-          },
-        }
-      )
-
-      // Audience Crowd Foreground: Parallax from y: 25px -> -10px
-      gsap.fromTo(
-        '.minigame-crowd',
-        { y: 25 },
-        {
-          y: -10,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: '#minigame',
-            start: 'top 85%',
-            end: 'bottom 20%',
-            scrub: true,
-            invalidateOnRefresh: true,
-          },
-        }
-      )
-
-      // Mini Game Exit -> Contact Transition (final 15-18vh)
-      gsap.to('.minigame-crowd', {
-        y: -20,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: '#minigame',
-          start: 'bottom 35%',
-          end: 'bottom top',
-          scrub: true,
-          invalidateOnRefresh: true,
-        },
-      })
-
-      gsap.to('.minigame-lights', {
-        opacity: 0.35,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: '#minigame',
-          start: 'bottom 35%',
-          end: 'bottom top',
-          scrub: true,
-          invalidateOnRefresh: true,
-        },
-      })
-
-      // ==========================================
-      // SCENE 3 -> SCENE 4 PAPER PLANE TRANSITION (Single Center Plane)
-      // ==========================================
-      const planeCenter = document.querySelector('.plane-center')
-
-      if (planeCenter) {
-        const planesTl = gsap.timeline({
-          scrollTrigger: {
-            trigger: '#minigame',
-            start: 'bottom 75%',
-            end: 'bottom 10%',
-            scrub: true,
-            invalidateOnRefresh: true,
-          },
-        })
-
-        // Initial setup
-        gsap.set(planeCenter, {
-          x: '-14vw',
-          y: '32vh',
-          rotation: -8,
-          autoAlpha: 0,
-        })
-
-        // SINGLE CENTER PLANE — Smooth, elegant flight path across transition
-        planesTl
-          .to(
-            planeCenter,
-            {
-              autoAlpha: 1,
-              duration: 0.1,
-              ease: 'none',
-            },
-            0.0
-          )
-          .to(
-            planeCenter,
-            {
-              x: '28vw',
-              y: '28vh',
-              rotation: -2,
-              duration: 0.32,
-              ease: 'none',
-            },
-            0.05
-          )
-          .to(
-            planeCenter,
-            {
-              x: '62vw',
-              y: '22vh',
-              rotation: 6,
-              duration: 0.35,
-              ease: 'none',
-            },
-            0.37
-          )
-          .to(
-            planeCenter,
-            {
-              x: '114vw',
-              y: '14vh',
-              rotation: 14,
-              autoAlpha: 0,
-              duration: 0.28,
-              ease: 'none',
-            },
-            0.72
-          )
-      }
-
-      // ==========================================
-      // 6. CONTACT SCENE ENTRY (Calm Studio Mood)
-      // ==========================================
-      // Contact Background
-      gsap.fromTo(
-        '.contact-bg',
+        '.casting-guide-bg',
         { opacity: 0.4 },
         {
           opacity: 1,
           ease: 'none',
           scrollTrigger: {
-            trigger: '#contact',
+            trigger: '#casting-guide',
             start: 'top 90%',
-            end: 'top 40%',
-            scrub: true,
-            invalidateOnRefresh: true,
-          },
-        }
-      )
-
-      // Warm Desk Lamp
-      gsap.fromTo(
-        '.contact-lamp',
-        { opacity: 0 },
-        {
-          opacity: 1,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: '#contact',
-            start: 'top 80%',
-            end: 'top 35%',
-            scrub: true,
-            invalidateOnRefresh: true,
-          },
-        }
-      )
-
-      // Smoke in Studio
-      gsap.fromTo(
-        '.contact-smoke',
-        { opacity: 0 },
-        {
-          opacity: 0.5,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: '#contact',
-            start: 'top 80%',
             end: 'top 40%',
             scrub: true,
             invalidateOnRefresh: true,
@@ -904,69 +649,16 @@ export function App() {
 
       // Heading Reveal: From Left
       gsap.fromTo(
-        '.contact-heading-group',
+        '.casting-heading-group',
         { autoAlpha: 0, x: -25 },
         {
           autoAlpha: 1,
           x: 0,
           ease: 'none',
           scrollTrigger: {
-            trigger: '#contact',
+            trigger: '#casting-guide',
             start: 'top 75%',
             end: 'top 45%',
-            scrub: true,
-            invalidateOnRefresh: true,
-          },
-        }
-      )
-
-      // Contact Details Reveal: From Bottom
-      gsap.fromTo(
-        '.contact-info',
-        { autoAlpha: 0, y: 20 },
-        {
-          autoAlpha: 1,
-          y: 0,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: '#contact',
-            start: 'top 70%',
-            end: 'top 40%',
-            scrub: true,
-            invalidateOnRefresh: true,
-          },
-        }
-      )
-
-      // Contact Form: From Right
-      gsap.fromTo(
-        '.contact-form',
-        { autoAlpha: 0, x: 30 },
-        {
-          autoAlpha: 1,
-          x: 0,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: '#contact',
-            start: 'top 70%',
-            end: 'top 40%',
-            scrub: true,
-            invalidateOnRefresh: true,
-          },
-        }
-      )
-
-      // Studio Desk & Props Parallax
-      gsap.fromTo(
-        '.contact-desk',
-        { y: 15 },
-        {
-          y: -10,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: '#contact',
-            start: 'top 75%',
-            end: 'bottom bottom',
             scrub: true,
             invalidateOnRefresh: true,
           },
@@ -1059,30 +751,9 @@ export function App() {
       {/* Global SoundWave Narrative Ribbon */}
       <SoundWaveLayer />
 
-      {/* Scene 3 -> Scene 4 Easter-Egg Paper Plane Scroll Transition */}
-      <PaperPlaneTransition />
-
       {/* Global Navigation Bar */}
       <Navbar onOpenRegister={() => setIsRegisterOpen(true)} />
 
-      {/* Reference Overlay Status Indicator (Dev helper) */}
-      <button
-        type="button"
-        onClick={() => setShowReferenceOverlay((prev) => !prev)}
-        className="fixed bottom-4 right-4 z-[99999] px-3.5 py-1.5 rounded-full text-[11px] font-mono font-medium backdrop-blur-md border transition-all cursor-pointer shadow-lg select-none flex items-center gap-2"
-        style={{
-          backgroundColor: showReferenceOverlay ? 'rgba(57, 139, 255, 0.85)' : 'rgba(7, 26, 51, 0.7)',
-          borderColor: showReferenceOverlay ? '#70D7FF' : 'rgba(112, 215, 255, 0.25)',
-          color: showReferenceOverlay ? '#FFFFFF' : '#91A4BB',
-        }}
-        title="Nhấn 'R' trên bàn phím để bật/tắt Reference Overlay"
-      >
-        <span
-          className="w-2 h-2 rounded-full"
-          style={{ backgroundColor: showReferenceOverlay ? '#70D7FF' : '#91A4BB' }}
-        />
-        <span>Overlay [R]: {showReferenceOverlay ? 'ON' : 'OFF'}</span>
-      </button>
 
       {/* Main Continuous Musical World with Seamless Overlaps */}
       <main className="music-world relative w-full overflow-hidden">
@@ -1102,24 +773,17 @@ export function App() {
           />
         </div>
 
-        {/* SCENE 02B: WE ARE FAMILY (Club Memories & Friendship - Overlaps About ~18vh on Desktop) */}
+        {/* SCENE 03: TUYỂN CTV (Thời gian đăng ký, 2 ảnh, 3 lĩnh vực tuyển chọn) */}
         <div className="lg:-mt-[18vh] -mt-0 relative z-[4]">
           <FamilyScene
             onOpenRegister={() => setIsRegisterOpen(true)}
           />
         </div>
 
-        {/* SCENE 03: MINI GAME (Music Challenge & Vinyl Arena - Clean Independent Section) */}
+        {/* SCENE 04: HƯỚNG DẪN & LỊCH CASTING (Thời gian casting, địa điểm, nút đăng ký) */}
         <div className="relative z-[5]">
-          <MiniGameScene
+          <CastingGuideScene
             onOpenRegister={() => setIsRegisterOpen(true)}
-            showReferenceOverlay={showReferenceOverlay}
-          />
-        </div>
-
-        {/* SCENE 04: CONTACT (Late Night Music Studio - Clean Independent Section) */}
-        <div className="relative z-[6]">
-          <ContactScene
             showReferenceOverlay={showReferenceOverlay}
           />
         </div>

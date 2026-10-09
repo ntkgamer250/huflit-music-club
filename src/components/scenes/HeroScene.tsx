@@ -17,7 +17,7 @@ export const HeroScene: React.FC<HeroSceneProps> = ({ onOpenRegister, onExplore,
     <section
       id="hero"
       ref={heroRef}
-      className="relative w-full min-h-screen lg:min-h-[105vh] flex flex-col items-center justify-start overflow-visible pt-24 sm:pt-30 lg:pt-32 pb-12 sm:pb-16 select-none bg-transparent"
+      className="relative w-full min-h-screen lg:min-h-[105vh] flex flex-col items-center justify-start overflow-visible pt-20 sm:pt-28 lg:pt-32 pb-10 sm:pb-16 select-none bg-transparent"
     >
       {/* Reference Overlay (toggled via 'R') */}
       <ReferenceOverlay
@@ -83,17 +83,17 @@ export const HeroScene: React.FC<HeroSceneProps> = ({ onOpenRegister, onExplore,
       {/* LAYER 4: Center HTML Content Group (Eyebrow, Heading, Description, Buttons) */}
       <div className="hero-content relative z-30 max-w-5xl mx-auto px-4 text-center flex flex-col items-center mt-2 sm:mt-6">
         {/* Eyebrow */}
-        <div className="hero-eyebrow flex items-center justify-center gap-2 sm:gap-4 mb-3 sm:mb-5">
-          <span className="w-6 sm:w-16 h-[1px] bg-gradient-to-r from-transparent to-[#70D7FF]/80" />
+        <div className="hero-eyebrow flex items-center justify-center gap-2 sm:gap-4 mb-2.5 sm:mb-5">
+          <span className="w-5 sm:w-16 h-[1px] bg-gradient-to-r from-transparent to-[#70D7FF]/80" />
           <span className="text-[10px] sm:text-xs tracking-[0.25em] sm:tracking-[0.35em] text-[#70D7FF] font-semibold uppercase flex items-center gap-1.5 glow-text-cyan">
             <Sparkles className="w-3.5 h-3.5 inline-block" />
             HUFLIT MUSIC CLUB
           </span>
-          <span className="w-6 sm:w-16 h-[1px] bg-gradient-to-l from-transparent to-[#70D7FF]/80" />
+          <span className="w-5 sm:w-16 h-[1px] bg-gradient-to-l from-transparent to-[#70D7FF]/80" />
         </div>
 
         {/* Main Heading */}
-        <h1 className="hero-heading font-serif-display text-[2.25rem] leading-[1.08] sm:text-6xl md:text-7xl lg:text-[5.5rem] tracking-tight text-white mb-3.5 sm:mb-5 max-w-4xl">
+        <h1 className="hero-heading font-serif-display text-[2.2rem] leading-[1.08] sm:text-6xl md:text-7xl lg:text-[5.5rem] tracking-tight text-white mb-2.5 sm:mb-5 max-w-4xl">
           <span className="text-white drop-shadow-[0_2px_15px_rgba(255,255,255,0.3)]">JOIN THE </span>
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#70D7FF] via-[#398BFF] to-[#70D7FF] glow-text-cyan">
             RHYTHM
@@ -101,12 +101,12 @@ export const HeroScene: React.FC<HeroSceneProps> = ({ onOpenRegister, onExplore,
         </h1>
 
         {/* Subtitle / Description */}
-        <p className="hero-desc font-sans text-sm sm:text-base md:text-lg text-[#91A4BB] max-w-2xl mx-auto leading-relaxed mb-6 sm:mb-8 text-balance">
+        <p className="hero-desc font-sans text-xs sm:text-base md:text-lg text-[#91A4BB] max-w-2xl mx-auto leading-relaxed mb-5 sm:mb-8 text-balance px-2">
           Nơi những người yêu âm nhạc cùng kết nối, biểu diễn và tạo nên những khoảnh khắc đáng nhớ bằng đam mê và sáng tạo.
         </p>
 
         {/* Action Buttons */}
-        <div className="hero-buttons flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-5 w-full sm:w-auto max-w-xs sm:max-w-none">
+        <div className="hero-buttons flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-5 w-full sm:w-auto max-w-xs sm:max-w-none">
           <button
             type="button"
             onClick={() => {
@@ -114,7 +114,8 @@ export const HeroScene: React.FC<HeroSceneProps> = ({ onOpenRegister, onExplore,
               onOpenRegister()
             }}
             onMouseEnter={() => sound.playHover()}
-            className="w-full sm:w-auto btn-primary-glow flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full text-sm sm:text-base font-semibold text-white tracking-wide cursor-pointer shadow-[0_0_25px_rgba(57,139,255,0.6)] hover:scale-105 active:scale-95 transition-all"
+            className="w-full sm:w-auto btn-primary-glow flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full text-sm sm:text-base font-semibold text-white tracking-wide cursor-pointer shadow-[0_0_25px_rgba(57,139,255,0.6)] active:scale-95 transition-all"
+            style={{ minHeight: '48px' }}
           >
             <span>Đăng ký CTV</span>
             <ArrowRight className="w-4 h-4" />
@@ -128,6 +129,7 @@ export const HeroScene: React.FC<HeroSceneProps> = ({ onOpenRegister, onExplore,
             }}
             onMouseEnter={() => sound.playHover()}
             className="w-full sm:w-auto btn-secondary-glow flex items-center justify-center gap-2 px-6 sm:px-7 py-3.5 rounded-full text-sm sm:text-base font-medium text-[#F4F7FB] tracking-wide cursor-pointer hover:text-[#70D7FF] active:scale-95 transition-all"
+            style={{ minHeight: '48px' }}
           >
             <span>Khám phá CLB</span>
             <ArrowRight className="w-4 h-4" />
@@ -136,9 +138,9 @@ export const HeroScene: React.FC<HeroSceneProps> = ({ onOpenRegister, onExplore,
       </div>
 
       {/* LAYER 5 & 6: Main Object (Microphone) & Soundwave Wrapper */}
-      <div className="relative z-20 w-full max-w-4xl flex items-center justify-center -mt-4 sm:-mt-8 md:-mt-10 mb-[-4%] pointer-events-none">
+      <div className="relative z-20 w-full max-w-4xl flex items-center justify-center -mt-2 sm:-mt-8 md:-mt-10 mb-[-3%] pointer-events-none">
         {/* Microphone Container */}
-        <div className="hero-mic relative w-[240px] sm:w-[360px] md:w-[460px] lg:w-[520px] aspect-[4/5] flex items-center justify-center">
+        <div className="hero-mic relative w-[210px] sm:w-[340px] md:w-[460px] lg:w-[520px] aspect-[4/5] flex items-center justify-center">
           {/* Main Object Microphone */}
           <img
             src="/assets/music-club/scene-01-hero/main_object_microphone.png"

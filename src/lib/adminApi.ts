@@ -20,7 +20,7 @@ export interface ApplicationItem {
   fullName: string
   email: string
   studentId: string
-  castingDivision: 'vocal' | 'dancer'
+  castingDivision: 'vocal' | 'dancer' | 'traditional_dance'
   castingSong: string
   beatUrl: string
   hasPerformanceExperience: boolean
@@ -36,6 +36,7 @@ export interface ApplicationCounts {
   total: number
   vocal: number
   dancer: number
+  traditional_dance: number
   new: number
   reviewing: number
   shortlisted: number

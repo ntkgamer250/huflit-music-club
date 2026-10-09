@@ -68,8 +68,12 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onLoginSuccess, 
         <div className="w-full max-w-[440px] bg-[#09172B]/90 border border-[#78B9F0]/20 rounded-[28px] p-7 sm:p-9 shadow-[0_25px_60px_rgba(0,0,0,0.8),0_0_35px_rgba(57,139,255,0.12)] backdrop-blur-xl">
           {/* Header */}
           <div className="text-center space-y-2 mb-8">
-            <div className="w-14 h-14 rounded-2xl bg-[#0E2A4D] border border-[#70D7FF]/35 flex items-center justify-center text-[#70D7FF] mx-auto shadow-[0_0_20px_rgba(112,215,255,0.25)]">
-              <ShieldCheck className="w-7 h-7" />
+            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#70D7FF]/40 flex items-center justify-center mx-auto shadow-[0_0_25px_rgba(112,215,255,0.35)] bg-[#071A33]">
+              <img
+                src="/assets/music-club/shared/hmc_logo.jpg"
+                alt="HUFLIT Music Club Logo"
+                className="w-full h-full object-cover"
+              />
             </div>
 
             <h1 className="font-serif-display text-2xl sm:text-3xl text-white tracking-tight pt-1">
