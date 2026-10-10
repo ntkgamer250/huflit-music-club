@@ -254,15 +254,47 @@ export async function sendSingleRealEmail(
   const htmlBody = generatePersonalizedEmailHtml(candidate, options)
   const subject = `[HMC 2026] Xác nhận đăng ký Casting CTV - ${candidate.fullName} (${candidate.studentId})`
 
-  // 1. Resend API
+  // 1. Resend API via Netlify Serverless Function (Server-to-server, bypasses browser CORS)
   if (activeConfig.provider === 'resend') {
     if (!activeConfig.resendApiKey) {
       return { success: false, error: 'Chưa nhập Resend API Key.' }
     }
 
     try {
-      const fromSender = activeConfig.senderEmail?.trim() || 'CLB Âm nhạc HUFLIT <onboarding@resend.dev>'
-      const res = await fetch('https://api.resend.com/emails', {
+      let fromSender = activeConfig.senderEmail?.trim() || 'CLB Âm nhạc HUFLIT <onboarding@resend.dev>'
+      if (fromSender.includes('@gmail.com') || fromSender.includes('@yahoo.com') || fromSender.includes('@outlook.com')) {
+        fromSender = 'CLB Âm nhạc HUFLIT <onboarding@resend.dev>'
+      }
+
+      // Call Netlify Function first (Server-side, no CORS restriction)
+      const res = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          provider: 'resend',
+          apiKey: activeConfig.resendApiKey.trim(),
+          from: fromSender,
+          to: [toEmail.trim()],
+          subject: subject,
+          html: htmlBody,
+        }),
+      })
+
+      const contentType = res.headers.get('content-type') || ''
+      if (contentType.includes('application/json')) {
+        const data = await res.json()
+        if (res.ok && data.success) {
+          return { success: true }
+        }
+        if (data.error) {
+          return { success: false, error: data.error }
+        }
+      }
+
+      // Fallback if netlify functions redirect is not ready in dev
+      const directRes = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${activeConfig.resendApiKey.trim()}`,
@@ -276,17 +308,20 @@ export async function sendSingleRealEmail(
         }),
       })
 
-      const data = await res.json()
-      if (!res.ok) {
+      const directData = await directRes.json()
+      if (!directRes.ok) {
         return {
           success: false,
-          error: data.message || `Lỗi từ Resend API (HTTP ${res.status})`,
+          error: directData.message || `Resend API lỗi (HTTP ${directRes.status})`,
         }
       }
 
       return { success: true }
     } catch (err: any) {
-      return { success: false, error: err.message || 'Không thể kết nối đến Resend API.' }
+      return {
+        success: false,
+        error: `Lỗi kết nối: ${err.message || 'Không thể gửi qua Resend'}.`,
+      }
     }
   }
 

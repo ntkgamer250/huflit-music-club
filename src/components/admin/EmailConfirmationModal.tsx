@@ -673,6 +673,9 @@ export const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
                         placeholder="CLB Âm nhạc HUFLIT <onboarding@resend.dev>"
                         className="w-full px-3.5 py-2.5 rounded-xl bg-[#09172B] border border-white/15 text-white text-xs focus:border-[#70D7FF] focus:outline-none"
                       />
+                      <div className="mt-1.5 p-2.5 rounded-xl bg-[#0E2A4D]/60 border border-[#70D7FF]/20 text-[11px] text-[#C9D9EC] leading-relaxed">
+                        💡 <strong>Lưu ý về Resend:</strong> Nếu bạn chưa xác thực tên miền riêng trên Resend, ô Người Gửi hãy để mặc định là <code className="text-[#FFE082] bg-black/40 px-1.5 py-0.5 rounded font-mono">CLB Âm nhạc HUFLIT &lt;onboarding@resend.dev&gt;</code> (Resend không cho phép nhập đuôi @gmail.com làm From header). Nếu bạn muốn gửi trực tiếp từ chính Gmail của CLB, hãy bấm chọn tab <strong>EmailJS</strong>!
+                      </div>
                     </div>
                   </div>
                 )}
