@@ -31,7 +31,7 @@ export const AUDITION_PLAN_CONTENT = {
   divisions: ['Hát', 'Nhảy', 'Múa'],
   contact: {
     email: 'clbamnhac.huflit@gmail.com',
-    fanpage: 'https://www.facebook.com/huflitmusicclub?locale=vi_VN',
+    fanpage: 'https://www.facebook.com/huflitmusicclub',
     hotline: 'Trần Như Lệ - 0812622268 - Phó Chủ nhiệm CLB Âm nhạc HUFLIT',
   },
 }
@@ -692,7 +692,7 @@ export function getAuditionPlanHtml(candidateName?: string, candidateStudentId?:
           <p>• <strong>Thời hạn thông báo trước:</strong> <span class="accent-gold">Ít nhất 24 tiếng</span> trước giờ đăng ký Casting.</p>
           <p>• <strong>Kênh liên hệ hỗ trợ:</strong></p>
           <ul>
-            <li>Fanpage: <a href="https://www.facebook.com/huflitmusicclub?locale=vi_VN" target="_blank" style="color: #70D7FF;">fb.com/huflitmusicclub</a></li>
+            <li>Fanpage: <a href="https://www.facebook.com/huflitmusicclub" target="_blank" style="color: #70D7FF;">fb.com/huflitmusicclub</a></li>
             <li>Email: <a href="mailto:clbamnhac.huflit@gmail.com" style="color: #70D7FF;">clbamnhac.huflit@gmail.com</a></li>
           </ul>
           <p><em>*Việc thay đổi lịch Casting sẽ được Ban Tổ chức xem xét và sắp xếp tùy theo tình hình thực tế.</em></p>
@@ -721,7 +721,7 @@ export function getAuditionPlanHtml(candidateName?: string, candidateStudentId?:
             </div>
             <div class="contact-item">
               <span class="icon">📱</span>
-              <div><strong>Fanpage chính thức:</strong> <a href="https://www.facebook.com/huflitmusicclub?locale=vi_VN" target="_blank">https://www.facebook.com/huflitmusicclub</a></div>
+              <div><strong>Fanpage chính thức:</strong> <a href="https://www.facebook.com/huflitmusicclub" target="_blank">https://www.facebook.com/huflitmusicclub</a></div>
             </div>
             <div class="contact-item">
               <span class="icon">☎️</span>

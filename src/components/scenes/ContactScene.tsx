@@ -231,6 +231,27 @@ export const ContactScene: React.FC<ContactSceneProps> = ({ showReferenceOverlay
                 </div>
               </a>
 
+              {/* Facebook Fanpage */}
+              <a
+                href={clubData.facebook.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onMouseEnter={() => sound.playHover()}
+                className="glass-panel p-3.5 sm:p-4 rounded-2xl flex items-center gap-3.5 sm:gap-4 hover:border-[#1877F2]/60 hover:bg-[#0E2A4D]/60 transition-all group cursor-pointer block"
+              >
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#0E2A4D] border border-[#1877F2]/40 flex items-center justify-center text-[#1877F2] group-hover:scale-110 group-hover:shadow-[0_0_15px_rgba(24,119,242,0.4)] transition-all shrink-0">
+                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  </svg>
+                </div>
+                <div className="overflow-hidden">
+                  <p className="text-[10px] sm:text-[11px] text-[#91A4BB] uppercase tracking-wider font-semibold">Fanpage Chính Thức</p>
+                  <p className="text-xs sm:text-sm text-white font-medium truncate group-hover:text-[#70D7FF] transition-colors">
+                    facebook.com/huflitmusicclub
+                  </p>
+                </div>
+              </a>
+
               {/* Location */}
               <div className="glass-panel p-3.5 sm:p-4 rounded-2xl flex items-center gap-3.5 sm:gap-4">
                 <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#0E2A4D] border border-[#70D7FF]/30 flex items-center justify-center text-[#70D7FF] shrink-0">

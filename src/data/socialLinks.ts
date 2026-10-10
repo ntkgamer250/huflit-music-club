@@ -106,8 +106,8 @@ export const clubData: ContactInfo = {
   performanceCount: "100+",
   email: "clbamnhac.huflit@gmail.com",
   facebook: {
-    handle: "fb.com/clbamnhac.huflit",
-    url: "https://facebook.com",
+    handle: "fb.com/huflitmusicclub",
+    url: "https://www.facebook.com/huflitmusicclub",
   },
   instagram: {
     handle: "@clbamnhac.huflit",

@@ -183,7 +183,7 @@ export function generatePersonalizedEmailHtml(
           BAN CHỦ NHIỆM CLB ÂM NHẠC HUFLIT (HMC)
         </div>
         <div>📩 Email: <a href="mailto:clbamnhac.huflit@gmail.com" style="color: #70D7FF; text-decoration: none;">clbamnhac.huflit@gmail.com</a></div>
-        <div>📱 Fanpage: <a href="https://www.facebook.com/huflitmusicclub?locale=vi_VN" style="color: #70D7FF; text-decoration: none;">fb.com/huflitmusicclub</a></div>
+        <div>📱 Fanpage: <a href="https://www.facebook.com/huflitmusicclub" target="_blank" rel="noopener noreferrer" style="color: #70D7FF; text-decoration: none;">fb.com/huflitmusicclub</a></div>
         <div>☎️ Hotline: <span style="color: #FFE082;">Trần Như Lệ - 0812622268</span> (Phó Chủ nhiệm)</div>
       </div>
     </div>
