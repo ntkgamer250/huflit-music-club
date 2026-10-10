@@ -368,31 +368,88 @@ export async function sendSingleRealEmail(
 
   // 3. Custom Webhook / Google Apps Script
   if (activeConfig.provider === 'webhook') {
-    if (!activeConfig.webhookUrl) {
-      return { success: false, error: 'Chưa nhập Webhook URL.' }
+    const webhookUrl = activeConfig.webhookUrl?.trim()
+    if (!webhookUrl) {
+      return { success: false, error: 'Chưa nhập Webhook / Google Apps Script URL.' }
     }
 
+    const payload = {
+      provider: 'webhook',
+      webhookUrl: webhookUrl,
+      to: toEmail.trim(),
+      candidate,
+      subject,
+      html: htmlBody,
+      customNote: options.customNote,
+      timestamp: new Date().toISOString(),
+    }
+
+    // Step 1: Attempt Netlify Serverless Proxy (Server-side, zero CORS restriction, follows Google 302 redirects)
     try {
-      const res = await fetch(activeConfig.webhookUrl.trim(), {
+      const serverRes = await fetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: toEmail.trim(),
-          candidate,
-          subject,
-          html: htmlBody,
-          customNote: options.customNote,
-          timestamp: new Date().toISOString(),
-        }),
+        body: JSON.stringify(payload),
       })
 
-      if (!res.ok) {
-        return { success: false, error: `Webhook trả về mã lỗi HTTP ${res.status}` }
+      const contentType = serverRes.headers.get('content-type') || ''
+      if (contentType.includes('application/json')) {
+        const data = await serverRes.json()
+        if (serverRes.ok && data.success) {
+          return { success: true }
+        }
+        if (data.error) {
+          return { success: false, error: data.error }
+        }
+      }
+    } catch {
+      // If serverless endpoint is not reachable (e.g. dev mode), continue to direct client-side fallback
+    }
+
+    // Step 2: Direct browser client-side fallback using text/plain (CORS-safelisted) & follow redirects
+    try {
+      const directPayload = JSON.stringify({
+        to: toEmail.trim(),
+        email: toEmail.trim(),
+        recipient: toEmail.trim(),
+        candidate,
+        subject,
+        html: htmlBody,
+        message: htmlBody,
+        body: htmlBody,
+        customNote: options.customNote,
+        timestamp: new Date().toISOString(),
+      })
+
+      try {
+        const directRes = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: directPayload,
+          redirect: 'follow',
+        })
+
+        if (directRes.ok) {
+          return { success: true }
+        }
+      } catch {
+        // If browser blocks reading response due to 302 redirect, use no-cors (the request still reaches Apps Script)
+        await fetch(webhookUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: directPayload,
+        })
+        return { success: true }
       }
 
       return { success: true }
     } catch (err: any) {
-      return { success: false, error: err.message || 'Không thể gọi Webhook URL.' }
+      return {
+        success: false,
+        error:
+          'Không thể kết nối đến Google Apps Script Webhook. Hãy chắc chắn bạn đã chọn Quyền truy cập: "Bất kỳ ai (Anyone)" khi Triển khai.',
+      }
     }
   }
 

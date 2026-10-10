@@ -32,8 +32,8 @@ export const handler: Handler = async (event: HandlerEvent) => {
   }
 
   try {
-    const body: SendEmailPayload = JSON.parse(event.body || '{}')
-    const apiKey = (body.apiKey || process.env.RESEND_API_KEY || '').trim()
+    const body: SendEmailPayload & { webhookUrl?: string; candidate?: any } = JSON.parse(event.body || '{}')
+    const provider = body.provider || 'resend'
     const rawTo = body.to
     const recipients = Array.isArray(rawTo) ? rawTo : [rawTo || '']
     const cleanRecipients = recipients.map((r) => String(r).trim()).filter(Boolean)
@@ -46,6 +46,110 @@ export const handler: Handler = async (event: HandlerEvent) => {
       }
     }
 
+    // ==========================================
+    // 1. GOOGLE APPS SCRIPT / WEBHOOK PROVIDER
+    // ==========================================
+    if (provider === 'webhook') {
+      const webhookUrl = (body.webhookUrl || '').trim()
+      if (!webhookUrl) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ success: false, error: 'Chưa cung cấp Webhook / Google Apps Script URL.' }),
+        }
+      }
+
+      try {
+        const primaryRecipient = cleanRecipients[0]
+        const webhookPayload = {
+          to: primaryRecipient,
+          recipients: cleanRecipients,
+          candidate: body.candidate || { fullName: 'Thí sinh', email: primaryRecipient },
+          subject: body.subject || '[HMC 2026] Xác nhận đăng ký Casting CTV - CLB Âm nhạc HUFLIT',
+          html: body.html || '<p>Xác nhận đăng ký casting HMC 2026</p>',
+          customNote: body.customNote || '',
+          timestamp: new Date().toISOString(),
+        }
+
+        // Server-side fetch to Google Apps Script (automatically follows 302 redirects)
+        const webhookRes = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8',
+          },
+          body: JSON.stringify(webhookPayload),
+          redirect: 'follow',
+        })
+
+        const status = webhookRes.status
+        const rawText = await webhookRes.text()
+
+        if (status === 404 || rawText.includes('không tồn tại') || rawText.includes('Not Found')) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({
+              success: false,
+              error: 'Google trả về 404: Link Apps Script chưa được cấp quyền "Bất kỳ ai (Anyone)" hoặc URL đã bị xóa/thay đổi. Vui lòng vào Google Apps Script bấm Triển khai mới -> Chọn Quyền truy cập: "Bất kỳ ai (Anyone)".',
+            }),
+          }
+        }
+
+        if (!webhookRes.ok) {
+          return {
+            statusCode: status,
+            headers,
+            body: JSON.stringify({
+              success: false,
+              error: `Google Apps Script Webhook trả về lỗi HTTP ${status}: ${rawText.slice(0, 150)}`,
+            }),
+          }
+        }
+
+        // Parse response if JSON
+        let parsedResult: any = null
+        try {
+          parsedResult = JSON.parse(rawText)
+        } catch {
+          // Plain text response is also fine if HTTP status is 200
+        }
+
+        if (parsedResult && parsedResult.success === false) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({
+              success: false,
+              error: parsedResult.error || 'Google Apps Script thực thi thất bại.',
+            }),
+          }
+        }
+
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            message: 'Đã gửi qua Google Apps Script Webhook thành công.',
+            detail: parsedResult || rawText.slice(0, 100),
+          }),
+        }
+      } catch (webhookErr: any) {
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: `Lỗi kết nối tới Google Apps Script Webhook: ${webhookErr.message || 'Không thể kết nối'}`,
+          }),
+        }
+      }
+    }
+
+    // ==========================================
+    // 2. RESEND API PROVIDER
+    // ==========================================
+    const apiKey = (body.apiKey || process.env.RESEND_API_KEY || '').trim()
     if (!apiKey) {
       return {
         statusCode: 400,
@@ -58,10 +162,8 @@ export const handler: Handler = async (event: HandlerEvent) => {
     }
 
     // Determine sender address
-    // Resend requires verified domain or onboarding@resend.dev on free tier
     let sender = body.from?.trim() || 'CLB Âm nhạc HUFLIT <onboarding@resend.dev>'
     if (sender.includes('@gmail.com') || sender.includes('@yahoo.com') || sender.includes('@outlook.com')) {
-      // Resend does not allow free webmail addresses as From header without verified domain
       sender = 'CLB Âm nhạc HUFLIT <onboarding@resend.dev>'
     }
 
@@ -86,7 +188,7 @@ export const handler: Handler = async (event: HandlerEvent) => {
       let errorMessage = resendData.message || `Resend trả về mã lỗi HTTP ${resendResponse.status}`
       if (resendData.name === 'validation_error' && resendData.message?.includes('testing emails')) {
         errorMessage =
-          'Tài khoản Resend miễn phí (chưa gắn tên miền riêng) chỉ cho phép gửi email thử nghiệm đến chính email đăng ký Resend của bạn. Để gửi cho tất cả thí sinh (@student.edu.vn, @gmail.com), bạn nên dùng phương thức EmailJS (kết nối Gmail CLB) hoặc xác thực tên miền trên Resend.'
+          'Tài khoản Resend miễn phí (chưa gắn tên miền riêng) chỉ cho phép gửi email thử nghiệm đến chính email đăng ký Resend của bạn. Để gửi cho tất cả thí sinh (@student.edu.vn, @gmail.com), bạn nên dùng phương thức Google Apps Script hoặc EmailJS.'
       }
 
       return {
