@@ -424,7 +424,7 @@ export async function sendSingleRealEmail(
       try {
         const directRes = await fetch(webhookUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          headers: { 'Content-Type': 'text/plain' },
           body: directPayload,
           redirect: 'follow',
         })
@@ -433,11 +433,11 @@ export async function sendSingleRealEmail(
           return { success: true }
         }
       } catch {
-        // If browser blocks reading response due to 302 redirect, use no-cors (the request still reaches Apps Script)
+        // If browser blocks reading response due to 302 redirect / CORS, use no-cors (the request still reaches Apps Script)
         await fetch(webhookUrl, {
           method: 'POST',
           mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          headers: { 'Content-Type': 'text/plain' },
           body: directPayload,
         })
         return { success: true }
@@ -448,7 +448,7 @@ export async function sendSingleRealEmail(
       return {
         success: false,
         error:
-          'Không thể kết nối đến Google Apps Script Webhook. Hãy chắc chắn bạn đã chọn Quyền truy cập: "Bất kỳ ai (Anyone)" khi Triển khai.',
+          'Không thể kết nối đến Google Apps Script Webhook. Hãy kiểm tra URL và chắc chắn đã chọn Quyền truy cập: "Bất kỳ ai (Anyone)" khi Triển khai.',
       }
     }
   }
@@ -609,6 +609,78 @@ export async function sendConfirmationEmailsToAll(
     totalFailed,
     timestamp: new Date().toISOString(),
     recipients: sentRecipients,
+  }
+}
+
+/**
+ * Direct check if the webhook / Apps Script URL is valid and responds
+ */
+export async function testWebhookUrlConnection(
+  url: string
+): Promise<{ success: boolean; message: string }> {
+  const cleanUrl = url.trim()
+  if (!cleanUrl) {
+    return { success: false, message: 'Vui lòng nhập Webhook / Google Apps Script URL.' }
+  }
+
+  // 1. First attempt through Serverless Proxy (Server-to-server check)
+  try {
+    const res = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        provider: 'webhook',
+        webhookUrl: cleanUrl,
+        checkOnly: true,
+        to: 'ping@hmcmusic.club',
+      }),
+    })
+
+    const contentType = res.headers.get('content-type') || ''
+    if (contentType.includes('application/json')) {
+      const data = await res.json()
+      if (res.ok && data.success) {
+        return { success: true, message: '✅ Kết nối Webhook thành công (HTTP 200 OK)! URL sẵn sàng gửi thư.' }
+      }
+      if (data.error) {
+        return { success: false, message: `❌ ${data.error}` }
+      }
+    }
+  } catch {
+    // Serverless proxy unavailable in dev mode, proceed to client check
+  }
+
+  // 2. Direct client check
+  try {
+    const res = await fetch(cleanUrl, {
+      method: 'GET',
+    })
+
+    if (res.ok) {
+      return {
+        success: true,
+        message: '✅ Kết nối Webhook Google Apps Script thành công (HTTP 200 OK)!',
+      }
+    }
+
+    if (res.status === 404) {
+      return {
+        success: false,
+        message:
+          '❌ Google trả về 404 Not Found: URL chưa được cấp quyền "Bất kỳ ai (Anyone)" hoặc URL chưa đúng. Hãy vào Google Apps Script bấm Triển khai -> Tùy chọn triển khai mới -> Quyền truy cập: "Bất kỳ ai".',
+      }
+    }
+
+    return {
+      success: false,
+      message: `❌ Webhook phản hồi mã HTTP ${res.status}. Vui lòng kiểm tra lại quyền truy cập của Web App.`,
+    }
+  } catch (err: any) {
+    return {
+      success: false,
+      message:
+        '❌ Không thể kết nối tới URL (Google từ chối hoặc trả về 404). Hãy chắc chắn bạn đã chọn Quyền truy cập: "Bất kỳ ai (Anyone)" khi Triển khai trên Google Apps Script.',
+    }
   }
 }
 

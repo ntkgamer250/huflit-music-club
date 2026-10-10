@@ -59,7 +59,38 @@ export const handler: Handler = async (event: HandlerEvent) => {
         }
       }
 
+      const isCheckOnly = (body as any).checkOnly === true
+
       try {
+        if (isCheckOnly) {
+          const testRes = await fetch(webhookUrl, {
+            method: 'GET',
+            redirect: 'follow',
+          })
+          const testStatus = testRes.status
+          const testText = await testRes.text()
+
+          if (testStatus === 404 || testText.includes('không tồn tại') || testText.includes('Not Found')) {
+            return {
+              statusCode: 400,
+              headers,
+              body: JSON.stringify({
+                success: false,
+                error: 'Google trả về 404: Link Apps Script chưa được cấp quyền "Bất kỳ ai (Anyone)" hoặc URL chưa đúng. Hãy kiểm tra lại phần Triển khai (Deploy) trong Google Apps Script.',
+              }),
+            }
+          }
+
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              success: true,
+              message: 'Kết nối Webhook Google Apps Script thành công (HTTP 200 OK)!',
+            }),
+          }
+        }
+
         const primaryRecipient = cleanRecipients[0]
         const webhookPayload = {
           to: primaryRecipient,
@@ -101,7 +132,7 @@ export const handler: Handler = async (event: HandlerEvent) => {
             headers,
             body: JSON.stringify({
               success: false,
-              error: `Google Apps Script Webhook trả về lỗi HTTP ${status}: ${rawText.slice(0, 150)}`,
+              error: `Google Apps Script Webhook trả về mã HTTP ${status}: ${rawText.slice(0, 150)}`,
             }),
           }
         }

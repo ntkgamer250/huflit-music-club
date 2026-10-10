@@ -28,6 +28,7 @@ import { ApplicationItem } from '../../lib/adminApi'
 import {
   sendConfirmationEmailsToAll,
   sendTestRealEmail,
+  testWebhookUrlConnection,
   generatePersonalizedEmailHtml,
   getSentEmailIds,
   getSavedEmailConfig,
@@ -116,8 +117,10 @@ export const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
   const [testEmailTarget, setTestEmailTarget] = useState('clbamnhac.huflit@gmail.com')
   const [isSendingTest, setIsSendingTest] = useState(false)
   const [testSendStatus, setTestSendStatus] = useState<{ success?: boolean; message?: string } | null>(null)
-  const [showAppsScriptGuide, setShowAppsScriptGuide] = useState(false)
+  const [showAppsScriptGuide, setShowAppsScriptGuide] = useState(true)
   const [hasCopiedScript, setHasCopiedScript] = useState(false)
+  const [isCheckingWebhook, setIsCheckingWebhook] = useState(false)
+  const [webhookCheckResult, setWebhookCheckResult] = useState<{ success?: boolean; message?: string } | null>(null)
 
   const sentEmailIds = getSentEmailIds()
 
@@ -153,6 +156,36 @@ export const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
     setEmailConfig(newConfig)
     saveEmailConfig(newConfig)
     sound.playSuccess()
+  }
+
+  const handleCheckWebhook = async () => {
+    const url = emailConfig.webhookUrl?.trim()
+    if (!url) {
+      alert('Vui lòng dán đường link Google Apps Script / Webhook URL trước khi kiểm tra.')
+      return
+    }
+
+    setIsCheckingWebhook(true)
+    setWebhookCheckResult(null)
+    sound.playClick()
+
+    try {
+      const res = await testWebhookUrlConnection(url)
+      setWebhookCheckResult(res)
+      if (res.success) {
+        sound.playSuccess()
+      } else {
+        sound.playError()
+      }
+    } catch (err: any) {
+      setWebhookCheckResult({
+        success: false,
+        message: `❌ Lỗi kiểm tra: ${err.message || 'Không kết nối được tới URL.'}`,
+      })
+      sound.playError()
+    } finally {
+      setIsCheckingWebhook(false)
+    }
   }
 
   const handleSendTestEmail = async () => {
@@ -772,16 +805,56 @@ export const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
                 {emailConfig.provider === 'webhook' && (
                   <div className="pt-2 space-y-3">
                     <div>
-                      <label className="block text-xs font-semibold text-[#91A4BB] uppercase tracking-wider mb-1">
-                        Webhook / Google Apps Script Web App URL
-                      </label>
-                      <input
-                        type="url"
-                        value={emailConfig.webhookUrl || ''}
-                        onChange={(e) => handleSaveConfig({ ...emailConfig, webhookUrl: e.target.value })}
-                        placeholder="https://script.google.com/macros/s/AKfycb.../exec"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#09172B] border border-white/15 text-white text-xs font-mono focus:border-[#70D7FF] focus:outline-none"
-                      />
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-semibold text-[#91A4BB] uppercase tracking-wider">
+                          Webhook / Google Apps Script Web App URL
+                        </label>
+                        <span className="text-[11px] text-[#FFE082] font-medium">
+                          Bắt buộc kết thúc bằng <code className="text-[#70D7FF]">/exec</code>
+                        </span>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <input
+                          type="url"
+                          value={emailConfig.webhookUrl || ''}
+                          onChange={(e) => {
+                            handleSaveConfig({ ...emailConfig, webhookUrl: e.target.value })
+                            setWebhookCheckResult(null)
+                          }}
+                          placeholder="https://script.google.com/macros/s/AKfycb.../exec"
+                          className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#09172B] border border-white/15 text-white text-xs font-mono focus:border-[#70D7FF] focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          disabled={isCheckingWebhook || !emailConfig.webhookUrl?.trim()}
+                          onClick={handleCheckWebhook}
+                          className="px-4 py-2.5 rounded-xl bg-[#70D7FF]/20 hover:bg-[#70D7FF]/30 text-[#70D7FF] border border-[#70D7FF]/40 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 disabled:opacity-40"
+                        >
+                          {isCheckingWebhook ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <span>Đang kiểm tra...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-3.5 h-3.5" />
+                              <span>Kiểm Tra URL Ngay</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      {webhookCheckResult && (
+                        <div
+                          className={`mt-2 p-3 rounded-xl text-xs font-medium leading-relaxed ${
+                            webhookCheckResult.success
+                              ? 'bg-[#10B981]/20 border border-[#10B981]/40 text-[#34D399]'
+                              : 'bg-red-500/20 border border-red-500/40 text-red-300'
+                          }`}
+                        >
+                          {webhookCheckResult.message}
+                        </div>
+                      )}
                     </div>
 
                     {/* Google Apps Script Guide & Code Helper */}
@@ -816,20 +889,27 @@ export const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
 
                       {showAppsScriptGuide && (
                         <div className="space-y-3 pt-2 text-[#C9D9EC] leading-relaxed border-t border-white/10">
-                          <div className="space-y-1.5 text-[11.5px]">
-                            <p><strong>Bước 1:</strong> Truy cập <a href="https://script.google.com" target="_blank" rel="noopener noreferrer" className="text-[#70D7FF] underline">script.google.com</a> và bấm <strong>Dự án mới (New project)</strong>.</p>
-                            <p><strong>Bước 2:</strong> Xóa hết mã cũ trong file <code className="text-[#FFE082]">Code.gs</code>, sau đó bấm nút <em>"📋 Sao chép mã Apps Script"</em> ở góc trên rồi dán vào.</p>
-                            <p><strong>Bước 3 (RẤT QUAN TRỌNG):</strong> Bấm nút <strong>Triển khai (Deploy)</strong> ở góc phải trên &gt; chọn <strong>Tùy chọn triển khai mới (New deployment)</strong>:</p>
-                            <ul className="list-disc pl-5 space-y-1 text-[#FFE082]">
-                              <li>Loại: <strong>Ứng dụng web (Web app)</strong></li>
-                              <li>Người thực thi (Execute as): <strong>Tôi (Tài khoản của bạn)</strong></li>
-                              <li>Ai có quyền truy cập (Who has access): 👉 <strong>Bất kỳ ai (Anyone)</strong> <em>(Bắt buộc để web gửi được thư tự động)</em></li>
-                            </ul>
-                            <p><strong>Bước 4:</strong> Bấm <strong>Triển khai</strong>, cho phép quyền gửi email của Google, sau đó copy đường link Web App (kết thúc bằng <code className="text-[#70D7FF]">/exec</code>) dán vào ô bên trên.</p>
+                          <div className="p-2.5 rounded-lg bg-[#FFE082]/15 border border-[#FFE082]/40 text-[12px] text-[#FFE082] space-y-1">
+                            <p className="font-bold flex items-center gap-1.5">
+                              ⚠️ NGUYÊN NHÂN GÂY LỖI "FAILED TO FETCH" HOẶC 404:
+                            </p>
+                            <p>
+                              Khi bạn bấm <strong>Triển khai (Deploy)</strong> trong Google Apps Script, mục <strong>"Ai có quyền truy cập" (Who has access)</strong> mặc định là <em>"Chỉ mình tôi"</em>. Bạn <strong>BẮT BUỘC</strong> phải chuyển thành 👉 <strong>"Bất kỳ ai" (Anyone)</strong> để ứng dụng web có thể kết nối gửi mail!
+                            </p>
                           </div>
 
-                          <div className="p-2.5 rounded-lg bg-[#FFE082]/10 border border-[#FFE082]/30 text-[11px] text-[#FFE082]">
-                            ⚠️ <strong>Khắc phục lỗi "Failed to fetch" hoặc 404:</strong> Nếu gửi thử bị lỗi, vào lại Google Apps Script &gt; <em>Quản lý bản triển khai (Manage deployments)</em> &gt; Bấm biểu tượng ✏️ chỉnh sửa &gt; Kiểm tra mục <strong>"Ai có quyền truy cập"</strong> đã chuyển thành <strong>"Bất kỳ ai" (Anyone)</strong> chưa và chọn <strong>Phiên bản mới (New version)</strong> trước khi Lưu.
+                          <div className="space-y-2 text-[11.5px]">
+                            <p><strong>Bước 1:</strong> Truy cập <a href="https://script.google.com" target="_blank" rel="noopener noreferrer" className="text-[#70D7FF] underline font-bold">script.google.com</a> và bấm <strong>Dự án mới (New project)</strong>.</p>
+                            <p><strong>Bước 2:</strong> Xóa hết nội dung trong file <code className="text-[#FFE082] font-mono">Code.gs</code>, sau đó bấm nút <em>"📋 Sao chép mã Apps Script"</em> ở góc trên bên phải rồi dán vào.</p>
+                            <p><strong>Bước 3:</strong> Bấm nút <strong>Triển khai (Deploy)</strong> ở góc phải trên màn hình &gt; Chọn <strong>Tùy chọn triển khai mới (New deployment)</strong>:</p>
+                            <ul className="list-disc pl-5 space-y-1 text-[#C9D9EC] bg-[#030811] p-3 rounded-lg border border-white/10">
+                              <li>Chọn loại: Bấm biểu tượng ⚙️ bánh răng &gt; Chọn <strong>Ứng dụng web (Web app)</strong></li>
+                              <li>Mô tả: <em>HMC Email Webhook</em></li>
+                              <li>Người thực thi (Execute as): <strong>Tôi (Tài khoản Gmail của bạn)</strong></li>
+                              <li>Ai có quyền truy cập (Who has access): 👉 <strong className="text-[#FFE082] underline">Bất kỳ ai (Anyone)</strong> <em>(Không chọn "Chỉ mình tôi")</em></li>
+                            </ul>
+                            <p><strong>Bước 4:</strong> Bấm <strong>Triển khai (Deploy)</strong> &gt; Bấm <strong>Cấp quyền truy cập (Authorize Access)</strong> &gt; Chọn tài khoản Google &gt; Bấm <strong>Nâng cao (Advanced)</strong> &gt; Bấm <strong>Đi tới... (không an toàn) / Go to ... (unsafe)</strong> &gt; Bấm <strong>Cho phép (Allow)</strong>.</p>
+                            <p><strong>Bước 5:</strong> Copy đường link <strong>Ứng dụng web (Web App URL)</strong> (link kết thúc bằng <code className="text-[#70D7FF] font-mono">/exec</code>) dán vào ô bên trên và bấm nút <strong>"Kiểm Tra URL Ngay"</strong>.</p>
                           </div>
 
                           <div className="relative">
