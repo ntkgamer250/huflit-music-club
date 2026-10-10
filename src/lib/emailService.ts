@@ -1,6 +1,19 @@
 import { ApplicationItem } from './adminApi'
 import { getAuditionPlanHtml } from './auditionPlanPdf'
 
+export interface EmailProviderConfig {
+  provider: 'resend' | 'emailjs' | 'webhook' | 'simulation'
+  // Resend
+  resendApiKey?: string
+  senderEmail?: string
+  // EmailJS
+  emailjsServiceId?: string
+  emailjsTemplateId?: string
+  emailjsPublicKey?: string
+  // Webhook / Google Apps Script
+  webhookUrl?: string
+}
+
 export interface EmailDispatchProgress {
   current: number
   total: number
@@ -13,15 +26,53 @@ export interface SendEmailOptions {
   customNote?: string
   senderName?: string
   includePdfAttachment?: boolean
+  config?: EmailProviderConfig
 }
 
 export interface EmailDispatchResult {
   totalSent: number
+  totalFailed: number
   timestamp: string
-  recipients: { id: string; email: string; fullName: string; division: string }[]
+  recipients: { id: string; email: string; fullName: string; division: string; success: boolean; error?: string }[]
 }
 
 const SENT_EMAILS_STORAGE_KEY = 'hmc_recruitment_sent_confirmation_emails_v1'
+const EMAIL_CONFIG_STORAGE_KEY = 'hmc_recruitment_email_config_v1'
+
+export const LIVE_WEBSITE_URL = 'https://huflitmusicclub.netlify.app'
+export const LIVE_CASTING_GUIDE_URL = 'https://huflitmusicclub.netlify.app/#casting-guide'
+
+/**
+ * Returns saved email provider configuration from local storage
+ */
+export function getSavedEmailConfig(): EmailProviderConfig {
+  try {
+    const raw = localStorage.getItem(EMAIL_CONFIG_STORAGE_KEY)
+    if (!raw) {
+      return {
+        provider: 'simulation',
+        senderEmail: 'CLB Âm nhạc HUFLIT <onboarding@resend.dev>',
+      }
+    }
+    return JSON.parse(raw)
+  } catch {
+    return {
+      provider: 'simulation',
+      senderEmail: 'CLB Âm nhạc HUFLIT <onboarding@resend.dev>',
+    }
+  }
+}
+
+/**
+ * Saves email provider configuration to local storage
+ */
+export function saveEmailConfig(config: EmailProviderConfig): void {
+  try {
+    localStorage.setItem(EMAIL_CONFIG_STORAGE_KEY, JSON.stringify(config))
+  } catch (err) {
+    console.error('Failed to save email config:', err)
+  }
+}
 
 /**
  * Returns the list of applicant IDs that have already been sent confirmation emails
@@ -171,7 +222,7 @@ export function generatePersonalizedEmailHtml(
           <p style="font-size: 12px; color: #91A4BB; margin: 0 0 14px 0;">
             Đã đính kèm văn bản kế hoạch tổ chức và quy định casting chuẩn của CLB Âm nhạc HUFLIT 2026.
           </p>
-          <a href="https://hmcmusic.club" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #398BFF, #70D7FF); color: #031024; font-weight: 800; font-size: 13px; text-decoration: none; padding: 10px 24px; border-radius: 25px; box-shadow: 0 0 15px rgba(112, 215, 255, 0.4);">
+          <a href="${LIVE_CASTING_GUIDE_URL}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background: linear-gradient(135deg, #398BFF, #70D7FF); color: #031024; font-weight: 800; font-size: 13px; text-decoration: none; padding: 10px 24px; border-radius: 25px; box-shadow: 0 0 15px rgba(112, 215, 255, 0.4);">
             Xem Thể Lệ Trên Website HMC →
           </a>
         </div>
@@ -191,8 +242,160 @@ export function generatePersonalizedEmailHtml(
 }
 
 /**
+ * Sends a single real email using the configured provider (Resend / EmailJS / Webhook / Simulation)
+ */
+export async function sendSingleRealEmail(
+  toEmail: string,
+  candidate: ApplicationItem,
+  options: SendEmailOptions = {},
+  config?: EmailProviderConfig
+): Promise<{ success: boolean; error?: string }> {
+  const activeConfig = config || options.config || getSavedEmailConfig()
+  const htmlBody = generatePersonalizedEmailHtml(candidate, options)
+  const subject = `[HMC 2026] Xác nhận đăng ký Casting CTV - ${candidate.fullName} (${candidate.studentId})`
+
+  // 1. Resend API
+  if (activeConfig.provider === 'resend') {
+    if (!activeConfig.resendApiKey) {
+      return { success: false, error: 'Chưa nhập Resend API Key.' }
+    }
+
+    try {
+      const fromSender = activeConfig.senderEmail?.trim() || 'CLB Âm nhạc HUFLIT <onboarding@resend.dev>'
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${activeConfig.resendApiKey.trim()}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: fromSender,
+          to: [toEmail.trim()],
+          subject: subject,
+          html: htmlBody,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        return {
+          success: false,
+          error: data.message || `Lỗi từ Resend API (HTTP ${res.status})`,
+        }
+      }
+
+      return { success: true }
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Không thể kết nối đến Resend API.' }
+    }
+  }
+
+  // 2. EmailJS REST API
+  if (activeConfig.provider === 'emailjs') {
+    if (!activeConfig.emailjsServiceId || !activeConfig.emailjsTemplateId || !activeConfig.emailjsPublicKey) {
+      return { success: false, error: 'Chưa điền đủ Service ID, Template ID hoặc Public Key của EmailJS.' }
+    }
+
+    try {
+      const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          service_id: activeConfig.emailjsServiceId.trim(),
+          template_id: activeConfig.emailjsTemplateId.trim(),
+          user_id: activeConfig.emailjsPublicKey.trim(),
+          template_params: {
+            to_name: candidate.fullName,
+            to_email: toEmail.trim(),
+            student_id: candidate.studentId,
+            division: candidate.castingDivision,
+            casting_song: candidate.castingSong,
+            subject: subject,
+            message_html: htmlBody,
+            custom_note: options.customNote || '',
+            website_url: LIVE_CASTING_GUIDE_URL,
+          },
+        }),
+      })
+
+      if (!res.ok) {
+        const errorText = await res.text()
+        return { success: false, error: errorText || `EmailJS lỗi HTTP ${res.status}` }
+      }
+
+      return { success: true }
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Không thể kết nối đến EmailJS.' }
+    }
+  }
+
+  // 3. Custom Webhook / Google Apps Script
+  if (activeConfig.provider === 'webhook') {
+    if (!activeConfig.webhookUrl) {
+      return { success: false, error: 'Chưa nhập Webhook URL.' }
+    }
+
+    try {
+      const res = await fetch(activeConfig.webhookUrl.trim(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: toEmail.trim(),
+          candidate,
+          subject,
+          html: htmlBody,
+          customNote: options.customNote,
+          timestamp: new Date().toISOString(),
+        }),
+      })
+
+      if (!res.ok) {
+        return { success: false, error: `Webhook trả về mã lỗi HTTP ${res.status}` }
+      }
+
+      return { success: true }
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Không thể gọi Webhook URL.' }
+    }
+  }
+
+  // 4. Default Simulation Mode (or offline fallback)
+  await new Promise((resolve) => setTimeout(resolve, 180))
+  return { success: true }
+}
+
+/**
+ * Sends test email to a specific address
+ */
+export async function sendTestRealEmail(
+  targetEmail: string,
+  config?: EmailProviderConfig,
+  customNote?: string
+): Promise<{ success: boolean; error?: string }> {
+  const sampleCandidate: ApplicationItem = {
+    id: 'HMC-TEST-001',
+    fullName: 'Thí Sinh Thử Nghiệm (Test)',
+    email: targetEmail.trim(),
+    studentId: '26DH999999',
+    castingDivision: 'vocal',
+    castingSong: 'Linh thiêng Việt Nam',
+    beatUrl: 'https://youtube.com',
+    hasPerformanceExperience: true,
+    performanceUrl: 'https://youtube.com',
+    passion: 'Đam mê âm nhạc và cống hiến cho HUFLIT Music Club.',
+    status: 'new',
+    adminNote: 'Email thử nghiệm hệ thống gửi mail tự động HMC.',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
+
+  return sendSingleRealEmail(targetEmail, sampleCandidate, { customNote }, config)
+}
+
+/**
  * Sends confirmation email with PDF plan attachment to all provided candidates
- * Simulates sending with real progress and updates local storage tracking.
  */
 export async function sendConfirmationEmailsToAll(
   candidates: ApplicationItem[],
@@ -201,9 +404,21 @@ export async function sendConfirmationEmailsToAll(
 ): Promise<EmailDispatchResult> {
   const total = candidates.length
   const logs: string[] = []
-  const sentRecipients: { id: string; email: string; fullName: string; division: string }[] = []
+  const sentRecipients: { id: string; email: string; fullName: string; division: string; success: boolean; error?: string }[] = []
+  const config = options.config || getSavedEmailConfig()
 
-  logs.push(`[${new Date().toLocaleTimeString('vi-VN')}] Bắt đầu chiến dịch gửi email xác nhận cho ${total} thí sinh...`)
+  const providerName =
+    config.provider === 'resend'
+      ? 'Resend API'
+      : config.provider === 'emailjs'
+      ? 'EmailJS'
+      : config.provider === 'webhook'
+      ? 'Webhook / Apps Script'
+      : 'Mô phỏng (Simulation)'
+
+  logs.push(
+    `[${new Date().toLocaleTimeString('vi-VN')}] 🚀 Khởi tạo gửi email tới ${total} bạn qua dịch vụ: ${providerName}...`
+  )
 
   if (onProgress) {
     onProgress({
@@ -215,43 +430,93 @@ export async function sendConfirmationEmailsToAll(
     })
   }
 
-  // Batch process candidates with realistic dispatch intervals
+  let totalSent = 0
+  let totalFailed = 0
+  const successfulIds: string[] = []
+
   for (let i = 0; i < candidates.length; i++) {
     const candidate = candidates[i]
     
-    // Simulate brief network delay for authentic user experience
-    await new Promise((resolve) => setTimeout(resolve, 200))
+    if (onProgress) {
+      onProgress({
+        current: i,
+        total,
+        currentCandidate: candidate,
+        status: 'sending',
+        logs: [...logs],
+      })
+    }
 
-    const logEntry = `[${new Date().toLocaleTimeString('vi-VN')}] Đã gửi thành công: ${candidate.fullName} (${candidate.email}) — [${candidate.id}]`
-    logs.push(logEntry)
+    try {
+      const res = await sendSingleRealEmail(candidate.email, candidate, options, config)
 
-    sentRecipients.push({
-      id: candidate.id,
-      email: candidate.email,
-      fullName: candidate.fullName,
-      division: candidate.castingDivision,
-    })
+      if (res.success) {
+        totalSent++
+        successfulIds.push(candidate.id)
+        const logEntry = `[${new Date().toLocaleTimeString('vi-VN')}] ✅ ĐÃ GỬI: ${candidate.fullName} <${candidate.email}> [${candidate.id}]`
+        logs.push(logEntry)
+
+        sentRecipients.push({
+          id: candidate.id,
+          email: candidate.email,
+          fullName: candidate.fullName,
+          division: candidate.castingDivision,
+          success: true,
+        })
+      } else {
+        totalFailed++
+        const logEntry = `[${new Date().toLocaleTimeString('vi-VN')}] ❌ THẤT BẠI: ${candidate.fullName} <${candidate.email}> — ${res.error}`
+        logs.push(logEntry)
+
+        sentRecipients.push({
+          id: candidate.id,
+          email: candidate.email,
+          fullName: candidate.fullName,
+          division: candidate.castingDivision,
+          success: false,
+          error: res.error,
+        })
+      }
+    } catch (err: any) {
+      totalFailed++
+      const logEntry = `[${new Date().toLocaleTimeString('vi-VN')}] ❌ LỖI: ${candidate.fullName} — ${err.message || 'Lỗi mạng'}`
+      logs.push(logEntry)
+
+      sentRecipients.push({
+        id: candidate.id,
+        email: candidate.email,
+        fullName: candidate.fullName,
+        division: candidate.castingDivision,
+        success: false,
+        error: err.message,
+      })
+    }
 
     if (onProgress) {
       onProgress({
         current: i + 1,
         total,
         currentCandidate: candidate,
-        status: i + 1 === total ? 'success' : 'sending',
+        status: i + 1 === total ? (totalFailed === 0 ? 'success' : 'error') : 'sending',
         logs: [...logs],
       })
     }
   }
 
-  // Mark all candidate IDs as sent in storage
-  const candidateIds = candidates.map((c) => c.id)
-  markEmailIdsAsSent(candidateIds)
+  // Mark successfully sent IDs
+  if (successfulIds.length > 0) {
+    markEmailIdsAsSent(successfulIds)
+  }
 
-  logs.push(`[${new Date().toLocaleTimeString('vi-VN')}] Hoàn tất: 100% email đã được chuyển phát thành công kèm file PDF thể lệ.`)
+  logs.push(
+    `[${new Date().toLocaleTimeString('vi-VN')}] 🏁 Kết thúc chiến dịch: ${totalSent} gửi thành công, ${totalFailed} thất bại.`
+  )
 
   return {
-    totalSent: sentRecipients.length,
+    totalSent,
+    totalFailed,
     timestamp: new Date().toISOString(),
     recipients: sentRecipients,
   }
 }
+

@@ -15,16 +15,26 @@ import {
   Check,
   Download,
   ExternalLink,
+  Settings2,
+  Key,
+  ShieldCheck,
+  SendHorizontal,
 } from 'lucide-react'
 import { ApplicationItem } from '../../lib/adminApi'
 import {
   sendConfirmationEmailsToAll,
+  sendTestRealEmail,
   generatePersonalizedEmailHtml,
   getSentEmailIds,
+  getSavedEmailConfig,
+  saveEmailConfig,
+  EmailProviderConfig,
   EmailDispatchProgress,
   EmailDispatchResult,
+  LIVE_CASTING_GUIDE_URL,
 } from '../../lib/emailService'
 import { exportAuditionPlanPdf, getAuditionPlanHtml } from '../../lib/auditionPlanPdf'
+import { sound } from '../../lib/audioSynth'
 
 interface EmailConfirmationModalProps {
   isOpen: boolean
@@ -39,7 +49,7 @@ export const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
   applications,
   onSuccess,
 }) => {
-  const [activeTab, setActiveTab] = useState<'preview_email' | 'preview_pdf' | 'recipients_list'>(
+  const [activeTab, setActiveTab] = useState<'preview_email' | 'preview_pdf' | 'recipients_list' | 'email_settings'>(
     'preview_email'
   )
   const [divisionScope, setDivisionScope] = useState<'all' | 'vocal' | 'dancer' | 'traditional_dance'>('all')
@@ -57,6 +67,12 @@ export const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
   const [sentResult, setSentResult] = useState<EmailDispatchResult | null>(null)
   const [selectedPreviewIndex, setSelectedPreviewIndex] = useState(0)
 
+  // Real Email Provider Settings State
+  const [emailConfig, setEmailConfig] = useState<EmailProviderConfig>(() => getSavedEmailConfig())
+  const [testEmailTarget, setTestEmailTarget] = useState('clbamnhac.huflit@gmail.com')
+  const [isSendingTest, setIsSendingTest] = useState(false)
+  const [testSendStatus, setTestSendStatus] = useState<{ success?: boolean; message?: string } | null>(null)
+
   const sentEmailIds = getSentEmailIds()
 
   // Filter recipient candidates based on selected division scope
@@ -72,6 +88,8 @@ export const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
     if (isOpen) {
       setSentResult(null)
       setIsSending(false)
+      setTestSendStatus(null)
+      setEmailConfig(getSavedEmailConfig())
       setProgress({
         current: 0,
         total: targetCandidates.length,
@@ -85,6 +103,46 @@ export const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
 
   if (!isOpen) return null
 
+  const handleSaveConfig = (newConfig: EmailProviderConfig) => {
+    setEmailConfig(newConfig)
+    saveEmailConfig(newConfig)
+    sound.playSuccess()
+  }
+
+  const handleSendTestEmail = async () => {
+    if (!testEmailTarget.trim()) {
+      alert('Vui lòng nhập địa chỉ email nhận test.')
+      return
+    }
+
+    setIsSendingTest(true)
+    setTestSendStatus(null)
+    sound.playClick()
+
+    try {
+      const res = await sendTestRealEmail(testEmailTarget, emailConfig, customNote)
+      if (res.success) {
+        sound.playSuccess()
+        setTestSendStatus({
+          success: true,
+          message: `✅ Đã gửi thành công 1 email thử nghiệm đến ${testEmailTarget}! Vui lòng kiểm tra Hộp thư đến (hoặc thư mục Spam).`,
+        })
+      } else {
+        setTestSendStatus({
+          success: false,
+          message: `❌ Lỗi gửi email thử nghiệm: ${res.error}`,
+        })
+      }
+    } catch (err: any) {
+      setTestSendStatus({
+        success: false,
+        message: `❌ Lỗi kết nối: ${err.message || 'Không gửi được.'}`,
+      })
+    } finally {
+      setIsSendingTest(false)
+    }
+  }
+
   const handleStartSending = async () => {
     if (targetCandidates.length === 0) {
       alert('Không có thí sinh nào trong danh sách được chọn.')
@@ -92,12 +150,13 @@ export const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
     }
 
     const confirmSend = window.confirm(
-      `Xác nhận gửi email xác nhận tham gia Casting kèm file PDF thể lệ cho ${targetCandidates.length} thí sinh?`
+      `Xác nhận gửi email xác nhận tham gia Casting kèm liên kết thể lệ website cho ${targetCandidates.length} thí sinh?`
     )
     if (!confirmSend) return
 
     setIsSending(true)
     setSentResult(null)
+    sound.playClick()
 
     try {
       const result = await sendConfirmationEmailsToAll(
@@ -105,11 +164,13 @@ export const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
         {
           customNote: customNote.trim(),
           includePdfAttachment: true,
+          config: emailConfig,
         },
         (p) => setProgress(p)
       )
 
       setSentResult(result)
+      sound.playSuccess()
       if (onSuccess) onSuccess()
     } catch (err: any) {
       alert('Có lỗi khi gửi email: ' + (err.message || 'Lỗi không xác định.'))
@@ -139,234 +200,243 @@ export const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-fadeIn">
       <div className="bg-[#09172B] border border-[#78B9F0]/30 rounded-3xl w-full max-w-5xl overflow-hidden shadow-[0_25px_70px_rgba(0,0,0,0.85)] flex flex-col max-h-[92vh]">
         {/* MODAL HEADER */}
-        <div className="p-4 sm:p-6 border-b border-white/10 flex items-center justify-between bg-[#050D1A]/70">
+        <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-[#061120]/90">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#398BFF]/30 to-[#70D7FF]/20 border border-[#70D7FF]/40 flex items-center justify-center text-[#70D7FF] shadow-[0_0_15px_rgba(57,139,255,0.3)]">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#398BFF] to-[#70D7FF] flex items-center justify-center text-[#030F20] shadow-[0_0_15px_rgba(112,215,255,0.4)]">
               <Mail className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-serif-display text-lg sm:text-xl text-white">
-                  Gửi Email Xác Nhận Casting &amp; Thể Lệ PDF
-                </h3>
-                <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#398BFF]/20 text-[#70D7FF] border border-[#70D7FF]/30">
-                  HMC 2026
+              <h3 className="font-sans font-bold text-white text-base sm:text-lg flex items-center gap-2">
+                <span>Gửi Email Xác Nhận &amp; Thể Lệ Casting</span>
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#70D7FF]/20 text-[#70D7FF] border border-[#70D7FF]/40 font-mono">
+                  {targetCandidates.length} thí sinh
                 </span>
-              </div>
-              <p className="text-xs text-[#91A4BB] mt-0.5">
-                Gửi thư xác nhận kèm toàn văn Kế hoạch &amp; Thể lệ tuyển CTV năm học 2026 – 2027 cho thí sinh.
+              </h3>
+              <p className="text-xs text-[#91A4BB]">
+                Tự động cá nhân hóa thông tin, kèm lịch casting và đường dẫn thể lệ chuẩn
               </p>
             </div>
           </div>
 
           <button
             type="button"
-            disabled={isSending}
             onClick={onClose}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-[#91A4BB] hover:text-white transition-colors cursor-pointer disabled:opacity-50"
+            className="p-2 rounded-xl text-[#91A4BB] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* RECIPIENTS TARGET SELECTOR BAR */}
-        <div className="px-4 sm:px-6 py-3 bg-[#071527] border-b border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="text-[#91A4BB] font-mono uppercase text-[11px] flex items-center gap-1">
-              <ListFilter className="w-3.5 h-3.5 text-[#70D7FF]" />
-              Phạm vi gửi:
-            </span>
-            <div className="flex gap-1.5 bg-[#050D1A] p-1 rounded-xl border border-white/10">
+        {/* MODAL BODY */}
+        <div className="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
+          {/* SCOPE SELECTOR & TABS */}
+          <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-white/10">
+            {/* Division Scope Filter */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[#91A4BB] uppercase font-mono font-semibold">
+                Đối tượng nhận:
+              </span>
+              <div className="flex rounded-xl bg-[#050D1A] p-1 border border-white/10 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setDivisionScope('all')}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer font-medium ${
+                    divisionScope === 'all'
+                      ? 'bg-[#398BFF] text-white shadow-sm'
+                      : 'text-[#91A4BB] hover:text-white'
+                  }`}
+                >
+                  Tất cả ({applications.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDivisionScope('vocal')}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer font-medium ${
+                    divisionScope === 'vocal'
+                      ? 'bg-[#398BFF] text-white shadow-sm'
+                      : 'text-[#91A4BB] hover:text-white'
+                  }`}
+                >
+                  Hát ({applications.filter((a) => a.castingDivision === 'vocal').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDivisionScope('dancer')}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer font-medium ${
+                    divisionScope === 'dancer'
+                      ? 'bg-[#398BFF] text-white shadow-sm'
+                      : 'text-[#91A4BB] hover:text-white'
+                  }`}
+                >
+                  Nhảy ({applications.filter((a) => a.castingDivision === 'dancer').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDivisionScope('traditional_dance')}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer font-medium ${
+                    divisionScope === 'traditional_dance'
+                      ? 'bg-[#398BFF] text-white shadow-sm'
+                      : 'text-[#91A4BB] hover:text-white'
+                  }`}
+                >
+                  Múa ({applications.filter((a) => a.castingDivision === 'traditional_dance').length})
+                </button>
+              </div>
+            </div>
+
+            {/* View Switcher Tabs */}
+            <div className="flex rounded-xl bg-[#050D1A] p-1 border border-white/10 text-xs">
               <button
                 type="button"
-                disabled={isSending}
-                onClick={() => setDivisionScope('all')}
-                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                  divisionScope === 'all'
-                    ? 'bg-[#398BFF] text-white shadow-sm'
+                onClick={() => setActiveTab('preview_email')}
+                className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer font-semibold ${
+                  activeTab === 'preview_email'
+                    ? 'bg-[#70D7FF]/20 text-[#70D7FF] border border-[#70D7FF]/40'
                     : 'text-[#91A4BB] hover:text-white'
                 }`}
               >
-                Tất cả ({applications.length})
+                <Eye className="w-3.5 h-3.5" />
+                <span>Xem Thư Mẫu</span>
               </button>
               <button
                 type="button"
-                disabled={isSending}
-                onClick={() => setDivisionScope('vocal')}
-                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                  divisionScope === 'vocal'
-                    ? 'bg-[#398BFF] text-white shadow-sm'
+                onClick={() => setActiveTab('preview_pdf')}
+                className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer font-semibold ${
+                  activeTab === 'preview_pdf'
+                    ? 'bg-[#70D7FF]/20 text-[#70D7FF] border border-[#70D7FF]/40'
                     : 'text-[#91A4BB] hover:text-white'
                 }`}
               >
-                Hát ({applications.filter((a) => a.castingDivision === 'vocal').length})
+                <FileText className="w-3.5 h-3.5" />
+                <span>Xem Thể Lệ (PDF)</span>
               </button>
               <button
                 type="button"
-                disabled={isSending}
-                onClick={() => setDivisionScope('dancer')}
-                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                  divisionScope === 'dancer'
-                    ? 'bg-[#A855F7] text-white shadow-sm'
+                onClick={() => setActiveTab('recipients_list')}
+                className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer font-semibold ${
+                  activeTab === 'recipients_list'
+                    ? 'bg-[#70D7FF]/20 text-[#70D7FF] border border-[#70D7FF]/40'
                     : 'text-[#91A4BB] hover:text-white'
                 }`}
               >
-                Nhảy ({applications.filter((a) => a.castingDivision === 'dancer').length})
+                <Users className="w-3.5 h-3.5" />
+                <span>Danh Sách ({targetCandidates.length})</span>
               </button>
               <button
                 type="button"
-                disabled={isSending}
-                onClick={() => setDivisionScope('traditional_dance')}
-                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                  divisionScope === 'traditional_dance'
-                    ? 'bg-[#FB7185] text-white shadow-sm'
-                    : 'text-[#91A4BB] hover:text-white'
+                onClick={() => setActiveTab('email_settings')}
+                className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer font-semibold ${
+                  activeTab === 'email_settings'
+                    ? 'bg-[#FFE082]/20 text-[#FFE082] border border-[#FFE082]/40'
+                    : 'text-[#91A4BB] hover:text-[#FFE082]'
                 }`}
               >
-                Múa ({applications.filter((a) => a.castingDivision === 'traditional_dance').length})
+                <Settings2 className="w-3.5 h-3.5" />
+                <span>Cấu Hình Gửi Thật</span>
               </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-[#91A4BB]">Số lượng gửi:</span>
-            <span className="px-2.5 py-0.5 rounded-lg bg-[#70D7FF]/20 text-[#70D7FF] font-bold font-mono">
-              {targetCandidates.length} thí sinh
-            </span>
-          </div>
-        </div>
-
-        {/* NAVIGATION TABS */}
-        <div className="flex border-b border-white/10 bg-[#061120] px-4 sm:px-6 gap-2 pt-2">
-          <button
-            type="button"
-            onClick={() => setActiveTab('preview_email')}
-            className={`flex items-center gap-2 px-4 py-2.5 border-b-2 font-semibold text-xs transition-all cursor-pointer ${
-              activeTab === 'preview_email'
-                ? 'border-[#70D7FF] text-[#70D7FF]'
-                : 'border-transparent text-[#91A4BB] hover:text-white'
-            }`}
-          >
-            <Mail className="w-4 h-4" />
-            <span>1. Xem trước Email xác nhận</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('preview_pdf')}
-            className={`flex items-center gap-2 px-4 py-2.5 border-b-2 font-semibold text-xs transition-all cursor-pointer ${
-              activeTab === 'preview_pdf'
-                ? 'border-[#FFE082] text-[#FFE082]'
-                : 'border-transparent text-[#91A4BB] hover:text-white'
-            }`}
-          >
-            <FileText className="w-4 h-4" />
-            <span>2. File PDF Thể Lệ (Nền Web)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('recipients_list')}
-            className={`flex items-center gap-2 px-4 py-2.5 border-b-2 font-semibold text-xs transition-all cursor-pointer ${
-              activeTab === 'recipients_list'
-                ? 'border-[#70D7FF] text-[#70D7FF]'
-                : 'border-transparent text-[#91A4BB] hover:text-white'
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            <span>3. Danh sách người nhận ({targetCandidates.length})</span>
-          </button>
-        </div>
-
-        {/* MODAL MAIN CONTENT BODY */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
           {/* TAB 1: PREVIEW EMAIL */}
           {activeTab === 'preview_email' && (
             <div className="space-y-4">
-              {/* Optional Custom Note Input */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-[#B8CDE5] uppercase tracking-wider block">
-                  Lời nhắn từ Ban Tổ Chức (Tùy chọn - Gửi kèm trong email):
+              {/* Custom Note input from Admin */}
+              <div className="p-4 rounded-2xl bg-[#050D1A]/70 border border-[#78B9F0]/20 space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-[#70D7FF] flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Lời nhắn bổ sung từ Ban Tổ Chức (chèn vào trong email):</span>
                 </label>
                 <textarea
                   rows={2}
                   value={customNote}
                   onChange={(e) => setCustomNote(e.target.value)}
-                  placeholder="Nhập ghi chú thêm cho thí sinh..."
-                  className="w-full p-3 rounded-xl bg-[#050D1A]/80 border border-[#78B9F0]/20 text-xs text-white outline-none focus:border-[#70D7FF] transition-all"
+                  placeholder="Nhập lời nhắn hoặc lưu ý riêng cho đợt casting..."
+                  className="w-full p-3 rounded-xl bg-[#09172B] border border-white/10 text-xs text-[#F4F7FB] focus:border-[#70D7FF] focus:outline-none transition-colors resize-none"
                 />
               </div>
 
-              {/* Recipient Selector for live preview */}
+              {/* Sample Candidate Switcher */}
               {targetCandidates.length > 1 && (
-                <div className="flex items-center justify-between text-xs text-[#91A4BB] bg-[#050D1A]/60 p-2.5 rounded-xl border border-white/10">
+                <div className="flex items-center justify-between text-xs text-[#91A4BB] px-2">
+                  <span>
+                    Đang xem trước nội dung cho:{' '}
+                    <strong className="text-white">
+                      {previewCandidate?.fullName} ({previewCandidate?.studentId})
+                    </strong>
+                  </span>
                   <div className="flex items-center gap-2">
-                    <Eye className="w-3.5 h-3.5 text-[#70D7FF]" />
-                    <span>Xem trước email gửi cho thí sinh:</span>
+                    <button
+                      type="button"
+                      disabled={selectedPreviewIndex === 0}
+                      onClick={() => setSelectedPreviewIndex((prev) => Math.max(0, prev - 1))}
+                      className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 cursor-pointer"
+                    >
+                      ← Trước
+                    </button>
+                    <span className="font-mono">
+                      {selectedPreviewIndex + 1} / {targetCandidates.length}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={selectedPreviewIndex >= targetCandidates.length - 1}
+                      onClick={() =>
+                        setSelectedPreviewIndex((prev) =>
+                          Math.min(targetCandidates.length - 1, prev + 1)
+                        )
+                      }
+                      className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 cursor-pointer"
+                    >
+                      Sau →
+                    </button>
                   </div>
-                  <select
-                    value={selectedPreviewIndex}
-                    onChange={(e) => setSelectedPreviewIndex(Number(e.target.value))}
-                    className="bg-[#09172B] border border-[#78B9F0]/30 rounded-lg px-2 py-1 text-xs text-[#70D7FF] outline-none cursor-pointer"
-                  >
-                    {targetCandidates.map((c, idx) => (
-                      <option key={c.id} value={idx}>
-                        {c.fullName} ({c.studentId}) — {c.castingDivision.toUpperCase()}
-                      </option>
-                    ))}
-                  </select>
                 </div>
               )}
 
-              {/* Rendered Email Preview Container */}
-              {previewCandidate && (
-                <div className="rounded-2xl border border-[#78B9F0]/25 overflow-hidden shadow-inner bg-[#030811] p-3 sm:p-5 max-h-[420px] overflow-y-auto">
-                  <div
-                    dangerouslySetInnerHTML={{
-                      __html: generatePersonalizedEmailHtml(previewCandidate, {
-                        customNote: customNote.trim(),
-                      }),
-                    }}
-                  />
+              {/* Email Live HTML Preview */}
+              {previewCandidate ? (
+                <div
+                  className="rounded-2xl overflow-hidden border border-white/10 bg-[#050D1A] p-3 max-h-[420px] overflow-y-auto custom-scrollbar"
+                  dangerouslySetInnerHTML={{
+                    __html: generatePersonalizedEmailHtml(previewCandidate, {
+                      customNote: customNote.trim(),
+                    }),
+                  }}
+                />
+              ) : (
+                <div className="p-8 text-center text-[#91A4BB] text-xs">
+                  Không có ứng viên nào trong danh mục đã chọn để hiển thị bản xem trước.
                 </div>
               )}
             </div>
           )}
 
-          {/* TAB 2: PREVIEW PDF THE LE */}
+          {/* TAB 2: PREVIEW PDF AUDITION PLAN */}
           {activeTab === 'preview_pdf' && (
             <div className="space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3 bg-[#050D1A]/80 p-3 rounded-xl border border-[#78B9F0]/20">
-                <div>
-                  <div className="text-xs font-bold text-[#FFE082] uppercase">
-                    VĂN BẢN: KẾ HOẠCH TỔ CHỨC TUYỂN THÀNH VIÊN CLB ÂM NHẠC HUFLIT (2026 - 2027)
-                  </div>
-                  <div className="text-[11px] text-[#91A4BB]">
-                    Định dạng nền màu Dark Navy đồng bộ website, chuẩn khổ in A4.
-                  </div>
+              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#050D1A]/80 border border-[#78B9F0]/20">
+                <div className="text-xs text-[#91A4BB]">
+                  Văn bản Kế hoạch &amp; Thể Lệ Tuyển CTV 2026 chính thức của Ban Tổ Chức HMC.
                 </div>
-
                 <button
                   type="button"
                   onClick={handleOpenPdfFullWindow}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#398BFF]/20 hover:bg-[#398BFF]/30 text-[#70D7FF] border border-[#70D7FF]/40 text-xs font-semibold transition-all cursor-pointer"
+                  className="btn-primary-glow px-4 py-2 rounded-xl text-xs font-semibold text-white flex items-center gap-2 cursor-pointer"
                 >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>Mở cửa sổ In / Tải PDF</span>
-                  <ExternalLink className="w-3 h-3" />
+                  <Download className="w-4 h-4" />
+                  <span>Mở / Tải File PDF Thể Lệ</span>
                 </button>
               </div>
 
-              {/* Embedded Frame Preview */}
-              <div className="rounded-2xl border border-[#78B9F0]/25 overflow-hidden h-[420px] bg-[#050D1A]">
+              {/* PDF Preview in IFrame */}
+              <div className="w-full h-[400px] rounded-2xl overflow-hidden border border-white/10 bg-white">
                 <iframe
-                  title="PDF Rules Preview"
+                  title="Audition Plan PDF Preview"
+                  className="w-full h-full border-none"
                   srcDoc={getAuditionPlanHtml(
                     previewCandidate?.fullName,
                     previewCandidate?.studentId,
                     previewCandidate?.castingDivision
                   )}
-                  className="w-full h-full border-0"
                 />
               </div>
             </div>
@@ -375,28 +445,34 @@ export const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
           {/* TAB 3: RECIPIENTS LIST */}
           {activeTab === 'recipients_list' && (
             <div className="space-y-3">
-              <div className="rounded-2xl border border-white/10 overflow-hidden bg-[#050D1A]/70">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-[#071527] text-[11px] font-mono uppercase text-[#91A4BB] border-b border-white/10">
-                      <th className="py-2.5 px-4 text-center w-12">STT</th>
-                      <th className="py-2.5 px-4">Họ và tên</th>
+              <div className="text-xs text-[#91A4BB] flex items-center justify-between">
+                <span>
+                  Danh sách <strong>{targetCandidates.length}</strong> thí sinh sẽ nhận email:
+                </span>
+                <span className="text-[11px] text-[#70D7FF]">
+                  Đã gửi trước đó: {targetCandidates.filter((c) => sentEmailIds.has(c.id)).length} /{' '}
+                  {targetCandidates.length}
+                </span>
+              </div>
+
+              <div className="max-h-[380px] overflow-y-auto rounded-2xl bg-[#050D1A]/80 border border-white/10 custom-scrollbar">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[#030811] text-[#91A4BB] font-mono uppercase tracking-wider sticky top-0 border-b border-white/10">
+                    <tr>
                       <th className="py-2.5 px-4">MSSV</th>
+                      <th className="py-2.5 px-4">Họ và tên</th>
                       <th className="py-2.5 px-4">Email</th>
                       <th className="py-2.5 px-4">Mảng</th>
-                      <th className="py-2.5 px-4 text-center">Trạng thái email</th>
+                      <th className="py-2.5 px-4 text-center">Trạng thái gửi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
-                    {targetCandidates.map((c, idx) => {
+                    {targetCandidates.map((c) => {
                       const isSent = sentEmailIds.has(c.id)
                       return (
                         <tr key={c.id} className="hover:bg-white/5 transition-colors">
-                          <td className="py-2.5 px-4 text-center font-mono text-[#91A4BB]">
-                            {idx + 1}
-                          </td>
+                          <td className="py-2.5 px-4 font-mono font-bold text-[#70D7FF]">{c.studentId}</td>
                           <td className="py-2.5 px-4 font-semibold text-white">{c.fullName}</td>
-                          <td className="py-2.5 px-4 font-mono text-[#70D7FF]">{c.studentId}</td>
                           <td className="py-2.5 px-4 text-[#B8CDE5] font-mono">{c.email}</td>
                           <td className="py-2.5 px-4">
                             {c.castingDivision === 'vocal' ? (
@@ -426,6 +502,237 @@ export const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
             </div>
           )}
 
+          {/* TAB 4: EMAIL SERVICE CONFIGURATION & TEST SEND */}
+          {activeTab === 'email_settings' && (
+            <div className="space-y-5">
+              <div className="p-4 rounded-2xl bg-[#050D1A]/80 border border-[#FFE082]/30 space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                  <div className="flex items-center gap-2">
+                    <Key className="w-4 h-4 text-[#FFE082]" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#FFE082]">
+                      Chọn dịch vụ gửi Email thật vào hộp thư (Inbox):
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-[#91A4BB]">
+                    Được lưu an toàn trên trình duyệt Admin
+                  </span>
+                </div>
+
+                {/* Provider Selector Buttons */}
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSaveConfig({ ...emailConfig, provider: 'emailjs' })}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      emailConfig.provider === 'emailjs'
+                        ? 'bg-[#398BFF]/20 border-[#70D7FF] text-white shadow-[0_0_15px_rgba(112,215,255,0.3)]'
+                        : 'bg-[#09172B] border-white/10 text-[#91A4BB] hover:text-white'
+                    }`}
+                  >
+                    <div className="font-bold text-xs flex items-center justify-between mb-1">
+                      <span>EmailJS</span>
+                      {emailConfig.provider === 'emailjs' && <Check className="w-3.5 h-3.5 text-[#70D7FF]" />}
+                    </div>
+                    <p className="text-[11px] text-[#C9D9EC]/70">Miễn phí 200 mail/tháng. Gửi từ Gmail/Outlook.</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSaveConfig({ ...emailConfig, provider: 'resend' })}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      emailConfig.provider === 'resend'
+                        ? 'bg-[#398BFF]/20 border-[#70D7FF] text-white shadow-[0_0_15px_rgba(112,215,255,0.3)]'
+                        : 'bg-[#09172B] border-white/10 text-[#91A4BB] hover:text-white'
+                    }`}
+                  >
+                    <div className="font-bold text-xs flex items-center justify-between mb-1">
+                      <span>Resend API</span>
+                      {emailConfig.provider === 'resend' && <Check className="w-3.5 h-3.5 text-[#70D7FF]" />}
+                    </div>
+                    <p className="text-[11px] text-[#C9D9EC]/70">Miễn phí 3.000 mail/tháng. Tỷ lệ vào Inbox cao.</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSaveConfig({ ...emailConfig, provider: 'webhook' })}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      emailConfig.provider === 'webhook'
+                        ? 'bg-[#398BFF]/20 border-[#70D7FF] text-white shadow-[0_0_15px_rgba(112,215,255,0.3)]'
+                        : 'bg-[#09172B] border-white/10 text-[#91A4BB] hover:text-white'
+                    }`}
+                  >
+                    <div className="font-bold text-xs flex items-center justify-between mb-1">
+                      <span>Google Apps Script / Webhook</span>
+                      {emailConfig.provider === 'webhook' && <Check className="w-3.5 h-3.5 text-[#70D7FF]" />}
+                    </div>
+                    <p className="text-[11px] text-[#C9D9EC]/70">Gửi qua Google Sheet / Apps Script Web App.</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSaveConfig({ ...emailConfig, provider: 'simulation' })}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      emailConfig.provider === 'simulation'
+                        ? 'bg-[#FFE082]/20 border-[#FFE082] text-white shadow-[0_0_15px_rgba(255,224,130,0.3)]'
+                        : 'bg-[#09172B] border-white/10 text-[#91A4BB] hover:text-white'
+                    }`}
+                  >
+                    <div className="font-bold text-xs flex items-center justify-between mb-1">
+                      <span>Mô phỏng (Test)</span>
+                      {emailConfig.provider === 'simulation' && <Check className="w-3.5 h-3.5 text-[#FFE082]" />}
+                    </div>
+                    <p className="text-[11px] text-[#C9D9EC]/70">Chạy thử nghiệm giao diện, ghi log hệ thống.</p>
+                  </button>
+                </div>
+
+                {/* Specific Config Inputs */}
+                {emailConfig.provider === 'resend' && (
+                  <div className="space-y-3 pt-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-[#91A4BB] uppercase tracking-wider mb-1">
+                        Resend API Key (Bắt đầu bằng re_...)
+                      </label>
+                      <input
+                        type="password"
+                        value={emailConfig.resendApiKey || ''}
+                        onChange={(e) => handleSaveConfig({ ...emailConfig, resendApiKey: e.target.value })}
+                        placeholder="re_123456789abcdef..."
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#09172B] border border-white/15 text-white text-xs font-mono focus:border-[#70D7FF] focus:outline-none"
+                      />
+                      <p className="text-[11px] text-[#91A4BB] mt-1">
+                        Lấy API key miễn phí tại{' '}
+                        <a href="https://resend.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-[#70D7FF] underline">
+                          resend.com/api-keys
+                        </a>.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-[#91A4BB] uppercase tracking-wider mb-1">
+                        Email Người Gửi (From Header)
+                      </label>
+                      <input
+                        type="text"
+                        value={emailConfig.senderEmail || 'CLB Âm nhạc HUFLIT <onboarding@resend.dev>'}
+                        onChange={(e) => handleSaveConfig({ ...emailConfig, senderEmail: e.target.value })}
+                        placeholder="CLB Âm nhạc HUFLIT <onboarding@resend.dev>"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#09172B] border border-white/15 text-white text-xs focus:border-[#70D7FF] focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {emailConfig.provider === 'emailjs' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-[#91A4BB] uppercase tracking-wider mb-1">
+                        EmailJS Service ID
+                      </label>
+                      <input
+                        type="text"
+                        value={emailConfig.emailjsServiceId || ''}
+                        onChange={(e) => handleSaveConfig({ ...emailConfig, emailjsServiceId: e.target.value })}
+                        placeholder="service_xxxxx"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#09172B] border border-white/15 text-white text-xs font-mono focus:border-[#70D7FF] focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-[#91A4BB] uppercase tracking-wider mb-1">
+                        EmailJS Template ID
+                      </label>
+                      <input
+                        type="text"
+                        value={emailConfig.emailjsTemplateId || ''}
+                        onChange={(e) => handleSaveConfig({ ...emailConfig, emailjsTemplateId: e.target.value })}
+                        placeholder="template_xxxxx"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#09172B] border border-white/15 text-white text-xs font-mono focus:border-[#70D7FF] focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-[#91A4BB] uppercase tracking-wider mb-1">
+                        EmailJS Public Key
+                      </label>
+                      <input
+                        type="text"
+                        value={emailConfig.emailjsPublicKey || ''}
+                        onChange={(e) => handleSaveConfig({ ...emailConfig, emailjsPublicKey: e.target.value })}
+                        placeholder="public_xxxxx"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#09172B] border border-white/15 text-white text-xs font-mono focus:border-[#70D7FF] focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {emailConfig.provider === 'webhook' && (
+                  <div className="pt-2">
+                    <label className="block text-xs font-semibold text-[#91A4BB] uppercase tracking-wider mb-1">
+                      Webhook / Google Apps Script URL
+                    </label>
+                    <input
+                      type="url"
+                      value={emailConfig.webhookUrl || ''}
+                      onChange={(e) => handleSaveConfig({ ...emailConfig, webhookUrl: e.target.value })}
+                      placeholder="https://script.google.com/macros/s/AKfycb.../exec"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#09172B] border border-white/15 text-white text-xs font-mono focus:border-[#70D7FF] focus:outline-none"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* TEST EMAIL SENDER BOX */}
+              <div className="p-4 rounded-2xl bg-[#050D1A]/90 border border-[#70D7FF]/30 space-y-3">
+                <div className="flex items-center gap-2">
+                  <SendHorizontal className="w-4 h-4 text-[#70D7FF]" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#70D7FF]">
+                    Gửi thử 1 Email kiểm tra vào Hộp thư cá nhân:
+                  </span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="email"
+                    value={testEmailTarget}
+                    onChange={(e) => setTestEmailTarget(e.target.value)}
+                    placeholder="Nhập email của bạn để nhận thử..."
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#09172B] border border-white/15 text-white text-xs focus:border-[#70D7FF] focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    disabled={isSendingTest}
+                    onClick={handleSendTestEmail}
+                    className="btn-primary-glow px-5 py-2.5 rounded-xl text-xs font-bold text-white transition-all cursor-pointer flex items-center justify-center gap-2 shrink-0 disabled:opacity-50"
+                  >
+                    {isSendingTest ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Đang gửi thử...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>⚡ Gửi Thử 1 Email Ngay</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {testSendStatus && (
+                  <div
+                    className={`p-3 rounded-xl text-xs font-medium ${
+                      testSendStatus.success
+                        ? 'bg-[#10B981]/20 border border-[#10B981]/40 text-[#34D399]'
+                        : 'bg-red-500/20 border border-red-500/40 text-red-300'
+                    }`}
+                  >
+                    {testSendStatus.message}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* DISPATCH PROGRESS & LOG TERMINAL */}
           {(isSending || sentResult) && (
             <div className="space-y-3 pt-3 border-t border-white/10">
@@ -445,7 +752,8 @@ export const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
                       <>
                         <CheckCircle2 className="w-4 h-4 text-[#34D399]" />
                         <span className="text-[#34D399] font-bold">
-                          Đã gửi thành công 100% ({sentResult?.totalSent} email)!
+                          Đã gửi thành công {sentResult?.totalSent} email
+                          {sentResult?.totalFailed ? ` (${sentResult.totalFailed} thất bại)` : ''}!
                         </span>
                       </>
                     )}
@@ -464,7 +772,7 @@ export const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
               </div>
 
               {/* Logs Terminal */}
-              <div className="bg-[#030811] p-3 rounded-xl border border-white/10 font-mono text-[11px] text-[#70D7FF] max-h-[120px] overflow-y-auto space-y-1">
+              <div className="bg-[#030811] p-3 rounded-xl border border-white/10 font-mono text-[11px] text-[#70D7FF] max-h-[140px] overflow-y-auto space-y-1 custom-scrollbar">
                 {progress.logs.map((log, idx) => (
                   <div key={idx} className="leading-tight">
                     {log}
@@ -481,11 +789,14 @@ export const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
             {sentResult ? (
               <span className="text-[#34D399] font-semibold flex items-center gap-1">
                 <CheckCircle2 className="w-4 h-4" />
-                Đã hoàn tất gửi email xác nhận &amp; thể lệ cho toàn bộ thí sinh.
+                Hoàn tất chiến dịch gửi email xác nhận.
               </span>
             ) : (
               <span>
-                Chỉ thực hiện gửi khi Admin nhấn nút xác nhận bên dưới.
+                Nút thể lệ trong email dẫn trực tiếp tới:{' '}
+                <a href={LIVE_CASTING_GUIDE_URL} target="_blank" rel="noopener noreferrer" className="text-[#70D7FF] underline">
+                  huflitmusicclub.netlify.app
+                </a>
               </span>
             )}
           </div>
@@ -519,7 +830,7 @@ export const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
               ) : (
                 <>
                   <Send className="w-4 h-4" />
-                  <span>Gửi Email Cho Toàn Bộ ({targetCandidates.length} Thí Sinh)</span>
+                  <span>Bắt Đầu Gửi Email ({targetCandidates.length} Thí Sinh)</span>
                 </>
               )}
             </button>

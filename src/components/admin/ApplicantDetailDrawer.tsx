@@ -18,12 +18,15 @@ import {
   UserCheck,
 } from 'lucide-react'
 import { ApplicationItem, CastingStatus, updateApplication } from '../../lib/adminApi'
+import { Edit2, Trash2 } from 'lucide-react'
 
 interface ApplicantDetailDrawerProps {
   applicationId: string | null
   applications: ApplicationItem[]
   onClose: () => void
   onApplicationUpdated: (updated: ApplicationItem) => void
+  onEditRequest?: (app: ApplicationItem) => void
+  onDeleteRequest?: (app: ApplicationItem) => void
 }
 
 export const ApplicantDetailDrawer: React.FC<ApplicantDetailDrawerProps> = ({
@@ -31,6 +34,8 @@ export const ApplicantDetailDrawer: React.FC<ApplicantDetailDrawerProps> = ({
   applications,
   onClose,
   onApplicationUpdated,
+  onEditRequest,
+  onDeleteRequest,
 }) => {
   const application = applications.find((a) => a.id === applicationId) || null
 
@@ -168,14 +173,39 @@ export const ApplicantDetailDrawer: React.FC<ApplicantDetailDrawerProps> = ({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Đóng chi tiết"
-            className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-[#91A4BB] hover:text-white border border-white/10 transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {onEditRequest && (
+              <button
+                type="button"
+                onClick={() => onEditRequest(application)}
+                className="px-3 py-1.5 rounded-xl bg-[#398BFF]/20 hover:bg-[#398BFF]/35 text-[#70D7FF] border border-[#70D7FF]/35 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                title="Chỉnh sửa thông tin thí sinh"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+                <span>Sửa</span>
+              </button>
+            )}
+
+            {onDeleteRequest && (
+              <button
+                type="button"
+                onClick={() => onDeleteRequest(application)}
+                className="p-1.5 rounded-xl bg-red-500/15 hover:bg-red-500/30 text-red-400 hover:text-red-300 border border-red-500/30 transition-all cursor-pointer"
+                title="Xóa hồ sơ thí sinh này"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Đóng chi tiết"
+              className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-[#91A4BB] hover:text-white border border-white/10 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Toast Notification */}

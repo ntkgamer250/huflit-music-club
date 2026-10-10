@@ -6,6 +6,10 @@ import {
   queryClientApplications,
   updateClientApplication,
   exportClientCsv,
+  editClientApplication,
+  deleteClientApplication,
+  deleteBatchClientApplications,
+  createManualClientApplication,
 } from './clientStore'
 
 export interface AdminUser {
@@ -248,6 +252,114 @@ export async function updateApplication(
   return updateClientApplication(id, payload)
 }
 
+/**
+ * Full edit of candidate application
+ */
+export async function editApplication(
+  id: string,
+  payload: Partial<ApplicationItem>
+): Promise<ApplicationItem> {
+  try {
+    const res = await fetch(`/api/applications/${id}/edit`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    })
+    const contentType = res.headers.get('content-type') || ''
+    if (res.ok && contentType.includes('application/json')) {
+      const data = await res.json()
+      try {
+        editClientApplication(id, payload)
+      } catch {
+        // ignore
+      }
+      return data.application
+    }
+  } catch {
+    // fallback to client store
+  }
+
+  return editClientApplication(id, payload)
+}
+
+/**
+ * Deletes a single candidate application
+ */
+export async function deleteApplication(id: string): Promise<void> {
+  try {
+    const res = await fetch(`/api/applications/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    })
+    if (res.ok) {
+      try {
+        deleteClientApplication(id)
+      } catch {
+        // ignore
+      }
+      return
+    }
+  } catch {
+    // fallback to client store
+  }
+
+  deleteClientApplication(id)
+}
+
+/**
+ * Deletes multiple candidate applications
+ */
+export async function deleteBatchApplications(ids: string[]): Promise<{ deletedCount: number }> {
+  try {
+    const res = await fetch('/api/applications/batch-delete', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ ids }),
+    })
+    if (res.ok) {
+      try {
+        deleteBatchClientApplications(ids)
+      } catch {
+        // ignore
+      }
+      return await res.json()
+    }
+  } catch {
+    // fallback to client store
+  }
+
+  return deleteBatchClientApplications(ids)
+}
+
+/**
+ * Creates a manual candidate application
+ */
+export async function createManualApplication(
+  data: Partial<ApplicationItem>
+): Promise<ApplicationItem> {
+  try {
+    const res = await fetch('/api/applications/manual', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    })
+    const contentType = res.headers.get('content-type') || ''
+    if (res.ok && contentType.includes('application/json')) {
+      const json = await res.json()
+      try {
+        createManualClientApplication(data)
+      } catch {
+        // ignore
+      }
+      return json.application
+    }
+  } catch {
+    // fallback
+  }
+
+  return createManualClientApplication(data)
+}
+
 export function getExportCsvUrl(params: ApplicationQueryParams = {}): string {
   const searchParams = new URLSearchParams()
   if (params.q) searchParams.set('q', params.q)
@@ -257,5 +369,12 @@ export function getExportCsvUrl(params: ApplicationQueryParams = {}): string {
   return `/api/applications/export/csv?${searchParams.toString()}`
 }
 
-export { exportClientCsv }
+export {
+  exportClientCsv,
+  editClientApplication,
+  deleteClientApplication,
+  deleteBatchClientApplications,
+  createManualClientApplication,
+}
+
 

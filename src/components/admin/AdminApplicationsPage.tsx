@@ -31,6 +31,11 @@ import {
   Check,
   LayoutDashboard,
   Play,
+  Edit2,
+  Trash2,
+  Plus,
+  CheckSquare,
+  Square,
 } from 'lucide-react'
 import {
   ApplicationItem,
@@ -40,11 +45,16 @@ import {
   logoutAdmin,
   AdminUser,
   exportClientCsv,
+  deleteApplication,
+  deleteBatchApplications,
 } from '../../lib/adminApi'
 import { exportScoreSheetPdf } from '../../lib/pdfScoreSheet'
 import { getSentEmailIds } from '../../lib/emailService'
 import { ApplicantDetailDrawer } from './ApplicantDetailDrawer'
 import { EmailConfirmationModal } from './EmailConfirmationModal'
+import { EditApplicantModal } from './EditApplicantModal'
+import { DeleteConfirmModal } from './DeleteConfirmModal'
+import { sound } from '../../lib/audioSynth'
 
 interface AdminApplicationsPageProps {
   currentUser: AdminUser
@@ -94,6 +104,19 @@ export const AdminApplicationsPage: React.FC<AdminApplicationsPageProps> = ({
   const [musicFilter, setMusicFilter] = useState<'all' | 'has_beat' | 'no_beat' | 'has_video'>('all')
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
+  // Multi-Selection State for Batch Operations
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
+  // Edit Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editingCandidate, setEditingCandidate] = useState<ApplicationItem | null>(null)
+
+  // Delete Confirm Modal State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [deletingCandidate, setDeletingCandidate] = useState<ApplicationItem | null>(null)
+  const [isBatchDelete, setIsBatchDelete] = useState(false)
+  const [isDeletingProgress, setIsDeletingProgress] = useState(false)
+
   // PDF Score Sheet Export Modal State
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false)
   const [pdfDivisionScope, setPdfDivisionScope] = useState<'all' | 'vocal' | 'dancer' | 'traditional_dance'>('all')
@@ -126,6 +149,7 @@ export const AdminApplicationsPage: React.FC<AdminApplicationsPageProps> = ({
     setActiveTab(tab)
     setIsMobileSidebarOpen(false)
     setCurrentPage(1)
+    setSelectedIds(new Set())
 
     if (tab === 'vocal') {
       setDivisionFilter('vocal')
@@ -203,6 +227,7 @@ export const AdminApplicationsPage: React.FC<AdminApplicationsPageProps> = ({
     setMusicFilter('all')
     setSortOption('newest')
     setCurrentPage(1)
+    setSelectedIds(new Set())
   }
 
   const handleQuickSortByDivision = () => {
@@ -248,298 +273,307 @@ export const AdminApplicationsPage: React.FC<AdminApplicationsPageProps> = ({
     }
   }
 
-  const handleLogout = async () => {
-    setIsLoggingOut(true)
-    await logoutAdmin()
-    onLogout()
+  // Multi-Selection Toggle Handlers
+  const handleToggleSelectCandidate = (id: string) => {
+    const next = new Set(selectedIds)
+    if (next.has(id)) {
+      next.delete(id)
+    } else {
+      next.add(id)
+    }
+    setSelectedIds(next)
+  }
+
+  const handleToggleSelectAllOnPage = () => {
+    if (selectedIds.size === displayedApplications.length && displayedApplications.length > 0) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(displayedApplications.map((a) => a.id)))
+    }
+  }
+
+  // Edit Modal Triggers
+  const handleOpenEdit = (app: ApplicationItem) => {
+    setEditingCandidate(app)
+    setIsEditModalOpen(true)
+  }
+
+  const handleCandidateSaved = (updated: ApplicationItem) => {
+    setApplications((prev) => prev.map((a) => (a.id === updated.id ? updated : a)))
+    loadData()
+  }
+
+  // Delete Single Candidate
+  const handleOpenDeleteSingle = (app: ApplicationItem) => {
+    setDeletingCandidate(app)
+    setIsBatchDelete(false)
+    setIsDeleteModalOpen(true)
+  }
+
+  // Delete Batch Candidates
+  const handleOpenDeleteBatch = () => {
+    if (selectedIds.size === 0) return
+    setIsBatchDelete(true)
+    setIsDeleteModalOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    setIsDeletingProgress(true)
+    try {
+      if (isBatchDelete) {
+        const idsToDelete = Array.from(selectedIds)
+        await deleteBatchApplications(idsToDelete)
+        setSelectedIds(new Set())
+      } else if (deletingCandidate) {
+        await deleteApplication(deletingCandidate.id)
+      }
+      sound.playSuccess()
+      setIsDeleteModalOpen(false)
+      loadData()
+      if (selectedAppId && (isBatchDelete ? selectedIds.has(selectedAppId) : deletingCandidate?.id === selectedAppId)) {
+        setSelectedAppId(null)
+      }
+    } catch (err: any) {
+      alert('Lỗi khi xóa thí sinh: ' + (err.message || 'Không xóa được.'))
+    } finally {
+      setIsDeletingProgress(false)
+    }
   }
 
   const handleApplicationUpdated = (updated: ApplicationItem) => {
     setApplications((prev) => prev.map((a) => (a.id === updated.id ? updated : a)))
+    loadData()
   }
 
-  const handleCopy = (id: string, text: string) => {
+  const handleCopy = (key: string, text: string) => {
     navigator.clipboard.writeText(text)
-    setCopiedId(id)
+    setCopiedId(key)
+    sound.playSuccess()
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  // Filter applications by music criteria when on search_music tab
-  const displayedApplications = React.useMemo(() => {
-    if (activeTab !== 'search_music') return applications
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      await logoutAdmin()
+      onLogout()
+    } catch {
+      onLogout()
+    }
+  }
+
+  // Filter applications for search_music tab quick pills
+  let displayedApplications = [...applications]
+  if (activeTab === 'search_music') {
     if (musicFilter === 'has_beat') {
-      return applications.filter((a) => Boolean(a.beatUrl && a.beatUrl.trim() !== ''))
+      displayedApplications = displayedApplications.filter((a) => a.beatUrl && a.beatUrl.trim() !== '')
+    } else if (musicFilter === 'no_beat') {
+      displayedApplications = displayedApplications.filter((a) => !a.beatUrl || a.beatUrl.trim() === '')
+    } else if (musicFilter === 'has_video') {
+      displayedApplications = displayedApplications.filter((a) => a.performanceUrl && a.performanceUrl.trim() !== '')
     }
-    if (musicFilter === 'no_beat') {
-      return applications.filter((a) => !a.beatUrl || a.beatUrl.trim() === '')
-    }
-    if (musicFilter === 'has_video') {
-      return applications.filter((a) => Boolean(a.performanceUrl && a.performanceUrl.trim() !== ''))
-    }
-    return applications
-  }, [applications, activeTab, musicFilter])
+  }
+
+  const startRecord = (currentPage - 1) * 25 + 1
+  const endRecord = Math.min(currentPage * 25, totalCount)
+  const candidatesWithBeatCount = applications.filter((a) => a.beatUrl && a.beatUrl.trim() !== '').length
+  const candidatesWithVideoCount = applications.filter((a) => a.performanceUrl && a.performanceUrl.trim() !== '').length
+
+  const selectedCandidatesList = applications.filter((a) => selectedIds.has(a.id))
 
   const renderStatusBadge = (status: CastingStatus) => {
     switch (status) {
       case 'new':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#398BFF]/15 text-[#70D7FF] border border-[#398BFF]/30">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#398BFF]/15 text-[#70D7FF] border border-[#398BFF]/30">
             <Clock className="w-3 h-3" />
             <span>Mới</span>
           </span>
         )
       case 'reviewing':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#FFB45C]/15 text-[#FFB45C] border border-[#FFB45C]/30">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#FFB45C]/15 text-[#FFB45C] border border-[#FFB45C]/35">
             <Eye className="w-3 h-3" />
             <span>Đang xem</span>
           </span>
         )
       case 'shortlisted':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#00E5FF]/15 text-[#00E5FF] border border-[#00E5FF]/30">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#00E5FF]/15 text-[#00E5FF] border border-[#00E5FF]/35">
             <Sparkles className="w-3 h-3" />
             <span>Shortlist</span>
           </span>
         )
-      case 'rejected':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#FF6B6B]/15 text-[#FF8E8E] border border-[#FF6B6B]/30">
-            <ThumbsDown className="w-3 h-3" />
-            <span>Không phù hợp</span>
-          </span>
-        )
       case 'accepted':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#10B981]/15 text-[#34D399] border border-[#10B981]/30">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#10B981]/15 text-[#34D399] border border-[#10B981]/35">
             <CheckCircle2 className="w-3 h-3" />
             <span>Đã chọn</span>
           </span>
         )
-      default:
-        return null
+      case 'rejected':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#FF6B6B]/15 text-[#FF8E8E] border border-[#FF6B6B]/35">
+            <ThumbsDown className="w-3 h-3" />
+            <span>Không hợp</span>
+          </span>
+        )
     }
   }
 
-  const startRecord = (currentPage - 1) * 25 + 1
-  const endRecord = Math.min(currentPage * 25, totalCount)
-
-  // Music beat count for search_music tab
-  const candidatesWithBeatCount = applications.filter((a) => a.beatUrl && a.beatUrl.trim() !== '').length
-  const candidatesWithVideoCount = applications.filter((a) => a.performanceUrl && a.performanceUrl.trim() !== '').length
-
   return (
-    <div className="min-h-screen bg-[#050D1A] text-[#F4F7FB] flex selection:bg-[#398BFF] selection:text-white">
-      {/* MOBILE SIDEBAR OVERLAY BACKDROP */}
+    <div className="min-h-screen bg-[#050D1A] text-[#F4F7FB] flex flex-col lg:flex-row font-sans selection:bg-[#70D7FF]/30 selection:text-[#70D7FF]">
+      {/* MOBILE BACKDROP */}
       {isMobileSidebarOpen && (
         <div
           onClick={() => setIsMobileSidebarOpen(false)}
-          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden transition-opacity"
+          className="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm lg:hidden"
         />
       )}
 
-      {/* LEFT SIDEBAR NAVIGATION */}
+      {/* LEFT ADMIN SIDEBAR */}
       <aside
-        className={`fixed lg:sticky top-0 left-0 z-50 h-screen w-72 bg-[#071527] border-r border-[#78B9F0]/15 flex flex-col justify-between transition-transform duration-300 ease-in-out shrink-0 ${
-          isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        className={`fixed lg:sticky top-0 left-0 z-50 h-screen w-[270px] bg-[#09172B] border-r border-[#78B9F0]/20 flex flex-col justify-between p-4 transition-transform duration-300 lg:translate-x-0 ${
+          isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        {/* Top: Logo & Main Navigation List */}
-        <div className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar">
-          {/* Sidebar Header / Brand */}
-          <div className="p-5 border-b border-[#78B9F0]/15 flex items-center justify-between bg-[#050D1A]/60">
+        <div className="space-y-6">
+          {/* Logo & System Brand */}
+          <div className="flex items-center justify-between px-2 pt-2">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full overflow-hidden border border-[#70D7FF]/40 flex items-center justify-center bg-[#071A33] shadow-[0_0_12px_rgba(57,139,255,0.4)] shrink-0">
-                <img
-                  src="/assets/music-club/shared/hmc_logo.jpg"
-                  alt="HMC Logo"
-                  className="w-full h-full object-cover"
-                />
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#398BFF] to-[#70D7FF] flex items-center justify-center text-[#050D1A] font-extrabold text-base shadow-[0_0_15px_rgba(112,215,255,0.4)]">
+                HMC
               </div>
               <div>
-                <div className="text-xs font-mono font-bold text-[#70D7FF] tracking-wider uppercase">
-                  HMC ADMIN
+                <div className="font-serif-display font-bold text-white text-sm leading-tight tracking-wide">
+                  HUFLIT MUSIC CLUB
                 </div>
-                <div className="text-[11px] text-[#91A4BB]">Tuyển CTV HMC 2026</div>
+                <div className="text-[10px] text-[#70D7FF] font-mono font-semibold uppercase tracking-wider">
+                  Recruitment Admin 2026
+                </div>
               </div>
             </div>
 
             <button
               type="button"
               onClick={() => setIsMobileSidebarOpen(false)}
-              className="lg:hidden p-1.5 rounded-lg text-[#91A4BB] hover:text-white bg-white/5"
+              className="lg:hidden p-1.5 rounded-lg text-[#91A4BB] hover:text-white"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Navigation Menu Groups */}
-          <div className="p-4 space-y-6">
-            {/* GROUP 1: MAIN NAVIGATION */}
-            <div className="space-y-1.5">
-              <div className="px-3 text-[10px] font-mono font-bold tracking-widest text-[#70D7FF]/70 uppercase">
-                QUẢN LÝ THÍ SINH
-              </div>
-
-              {/* 1. Tổng danh sách thí sinh */}
-              <button
-                type="button"
-                onClick={() => handleSelectTab('all')}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === 'all'
-                    ? 'bg-gradient-to-r from-[#398BFF]/25 to-[#70D7FF]/15 text-[#70D7FF] border border-[#70D7FF]/40 shadow-[0_0_15px_rgba(57,139,255,0.25)]'
-                    : 'text-[#B8CDE5] hover:bg-white/5 hover:text-white border border-transparent'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <LayoutDashboard className="w-4 h-4 text-[#398BFF]" />
-                  <span>Tổng danh sách thí sinh</span>
-                </div>
-                <span className="px-2 py-0.5 rounded-full text-[10.5px] font-mono bg-[#050D1A] border border-[#78B9F0]/20 text-[#70D7FF]">
-                  {counts.total}
-                </span>
-              </button>
-
-              {/* 2. Tra cứu Họ tên, MSSV & Link nhạc */}
-              <button
-                type="button"
-                onClick={() => handleSelectTab('search_music')}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === 'search_music'
-                    ? 'bg-gradient-to-r from-[#398BFF]/25 to-[#70D7FF]/15 text-[#70D7FF] border border-[#70D7FF]/40 shadow-[0_0_15px_rgba(57,139,255,0.25)]'
-                    : 'text-[#B8CDE5] hover:bg-white/5 hover:text-white border border-transparent'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Music className="w-4 h-4 text-[#70D7FF]" />
-                  <span>Lọc Tên, MSSV &amp; Link nhạc</span>
-                </div>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-[#10B981]/15 text-[#34D399] border border-[#10B981]/30">
-                  {candidatesWithBeatCount} beat
-                </span>
-              </button>
+          {/* Navigation Menu */}
+          <nav className="space-y-1.5">
+            <div className="px-3 pb-1.5 text-[10px] font-mono uppercase text-[#91A4BB]/70 font-semibold tracking-wider">
+              QUẢN LÝ ỨNG VIÊN
             </div>
 
-            {/* GROUP 2: LỌC THEO MẢNG */}
-            <div className="space-y-1.5">
-              <div className="px-3 text-[10px] font-mono font-bold tracking-widest text-[#70D7FF]/70 uppercase">
-                LỌC THEO MẢNG CHUYÊN MÔN
+            <button
+              type="button"
+              onClick={() => handleSelectTab('all')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'all'
+                  ? 'bg-gradient-to-r from-[#398BFF] to-[#2563EB] text-white shadow-[0_0_15px_rgba(57,139,255,0.4)]'
+                  : 'text-[#C9D9EC] hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <LayoutDashboard className="w-4 h-4" />
+                <span>Tổng danh sách thí sinh</span>
               </div>
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-black/25">
+                {counts.total}
+              </span>
+            </button>
 
-              {/* Mảng Hát (Vocal) */}
-              <button
-                type="button"
-                onClick={() => handleSelectTab('vocal')}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === 'vocal'
-                    ? 'bg-[#398BFF]/20 text-[#70D7FF] border border-[#70D7FF]/40 shadow-[0_0_12px_rgba(57,139,255,0.25)]'
-                    : 'text-[#B8CDE5] hover:bg-white/5 hover:text-white border border-transparent'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Mic className="w-4 h-4 text-[#70D7FF]" />
-                  <span>Mảng Hát (Vocal)</span>
-                </div>
-                <span className="px-2 py-0.5 rounded-full text-[10.5px] font-mono bg-[#050D1A] border border-[#78B9F0]/20 text-[#70D7FF]">
-                  {counts.vocal}
-                </span>
-              </button>
+            <button
+              type="button"
+              onClick={() => handleSelectTab('search_music')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'search_music'
+                  ? 'bg-gradient-to-r from-[#398BFF] to-[#2563EB] text-white shadow-[0_0_15px_rgba(57,139,255,0.4)]'
+                  : 'text-[#C9D9EC] hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Music className="w-4 h-4 text-[#70D7FF]" />
+                <span>Tra cứu Beat &amp; MSSV</span>
+              </div>
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-[#70D7FF]/20 text-[#70D7FF]">
+                {candidatesWithBeatCount}
+              </span>
+            </button>
 
-              {/* Mảng Nhảy (Dance) */}
-              <button
-                type="button"
-                onClick={() => handleSelectTab('dancer')}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === 'dancer'
-                    ? 'bg-[#A855F7]/20 text-[#D8B4FE] border border-[#C084FC]/40 shadow-[0_0_12px_rgba(168,85,247,0.25)]'
-                    : 'text-[#B8CDE5] hover:bg-white/5 hover:text-white border border-transparent'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Activity className="w-4 h-4 text-[#D8B4FE]" />
-                  <span>Mảng Nhảy (Dance)</span>
-                </div>
-                <span className="px-2 py-0.5 rounded-full text-[10.5px] font-mono bg-[#050D1A] border border-[#78B9F0]/20 text-[#D8B4FE]">
-                  {counts.dancer}
-                </span>
-              </button>
-
-              {/* Mảng Múa (Traditional) */}
-              <button
-                type="button"
-                onClick={() => handleSelectTab('traditional_dance')}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === 'traditional_dance'
-                    ? 'bg-[#F43F5E]/20 text-[#FDA4AF] border border-[#FB7185]/40 shadow-[0_0_12px_rgba(244,63,94,0.25)]'
-                    : 'text-[#B8CDE5] hover:bg-white/5 hover:text-white border border-transparent'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Sparkles className="w-4 h-4 text-[#FB7185]" />
-                  <span>Mảng Múa (Traditional)</span>
-                </div>
-                <span className="px-2 py-0.5 rounded-full text-[10.5px] font-mono bg-[#050D1A] border border-[#78B9F0]/20 text-[#FB7185]">
-                  {counts.traditional_dance || 0}
-                </span>
-              </button>
+            <div className="pt-3 px-3 pb-1.5 text-[10px] font-mono uppercase text-[#91A4BB]/70 font-semibold tracking-wider">
+              PHÂN LOẠI MẢNG CASTING
             </div>
 
-            {/* GROUP 3: CÔNG CỤ XUẤT FILE & TIỆN ÍCH */}
-            <div className="space-y-1.5 pt-2 border-t border-white/5">
-              <div className="px-3 text-[10px] font-mono font-bold tracking-widest text-[#70D7FF]/70 uppercase">
-                CÔNG CỤ &amp; XUẤT FILE
+            <button
+              type="button"
+              onClick={() => handleSelectTab('vocal')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'vocal'
+                  ? 'bg-gradient-to-r from-[#398BFF] to-[#2563EB] text-white shadow-[0_0_15px_rgba(57,139,255,0.4)]'
+                  : 'text-[#C9D9EC] hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Mic className="w-4 h-4 text-[#70D7FF]" />
+                <span>Mảng Hát (Vocal)</span>
               </div>
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-black/25">
+                {counts.vocal}
+              </span>
+            </button>
 
-              {/* Xuất PDF Chấm Điểm */}
-              <button
-                type="button"
-                onClick={() => handleOpenPdfModal(divisionFilter as any)}
-                className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-[#B8CDE5] hover:text-white hover:bg-white/5 transition-colors cursor-pointer text-left"
-              >
-                <Printer className="w-4 h-4 text-[#70D7FF]" />
-                <span>Xuất PDF Chấm Điểm (A-Z)</span>
-              </button>
+            <button
+              type="button"
+              onClick={() => handleSelectTab('dancer')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'dancer'
+                  ? 'bg-gradient-to-r from-[#398BFF] to-[#2563EB] text-white shadow-[0_0_15px_rgba(57,139,255,0.4)]'
+                  : 'text-[#C9D9EC] hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Activity className="w-4 h-4 text-[#D8B4FE]" />
+                <span>Mảng Nhảy (Dance)</span>
+              </div>
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-black/25">
+                {counts.dancer}
+              </span>
+            </button>
 
-              {/* Gửi Email Xác Nhận */}
-              <button
-                type="button"
-                onClick={handleOpenEmailModal}
-                className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-[#B8CDE5] hover:text-white hover:bg-white/5 transition-colors cursor-pointer text-left"
-              >
-                <Mail className="w-4 h-4 text-[#818CF8]" />
-                <span>Gửi Mail Xác Nhận Thể Lệ</span>
-              </button>
-
-              {/* Xuất CSV */}
-              <button
-                type="button"
-                onClick={() => {
-                  exportClientCsv({
-                    q: debouncedQuery,
-                    division: divisionFilter,
-                    status: statusFilter,
-                    experience: experienceFilter,
-                    sort: sortOption,
-                  })
-                }}
-                className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-[#B8CDE5] hover:text-white hover:bg-white/5 transition-colors cursor-pointer text-left"
-              >
-                <Download className="w-4 h-4 text-[#34D399]" />
-                <span>Xuất File Excel (CSV)</span>
-              </button>
-            </div>
-          </div>
+            <button
+              type="button"
+              onClick={() => handleSelectTab('traditional_dance')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'traditional_dance'
+                  ? 'bg-gradient-to-r from-[#398BFF] to-[#2563EB] text-white shadow-[0_0_15px_rgba(57,139,255,0.4)]'
+                  : 'text-[#C9D9EC] hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Sparkles className="w-4 h-4 text-[#FB7185]" />
+                <span>Mảng Múa (Traditional)</span>
+              </div>
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-black/25">
+                {counts.traditional_dance || 0}
+              </span>
+            </button>
+          </nav>
         </div>
 
-        {/* Sidebar Footer: User Profile & Quick Links */}
-        <div className="p-4 border-t border-[#78B9F0]/15 bg-[#050D1A]/80 space-y-3">
-          <div className="flex items-center gap-2.5 px-2 text-xs text-[#B8CDE5]">
-            <div className="w-7 h-7 rounded-lg bg-[#398BFF]/20 border border-[#70D7FF]/30 flex items-center justify-center text-[#70D7FF]">
+        {/* Footer Admin User Card */}
+        <div className="pt-4 border-t border-white/10 space-y-3">
+          <div className="flex items-center gap-3 px-2">
+            <div className="w-8 h-8 rounded-full bg-[#398BFF]/20 border border-[#70D7FF]/40 flex items-center justify-center text-[#70D7FF]">
               <User className="w-4 h-4" />
             </div>
-            <div className="truncate">
-              <div className="font-semibold text-white truncate text-xs">{currentUser.email}</div>
-              <div className="text-[10px] text-[#91A4BB]">Quản trị viên</div>
+            <div className="overflow-hidden">
+              <div className="text-xs font-bold text-white truncate">Ban Chủ Nhiệm HMC</div>
+              <div className="text-[11px] text-[#91A4BB] font-mono truncate">{currentUser.email}</div>
             </div>
           </div>
 
@@ -659,7 +693,7 @@ export const AdminApplicationsPage: React.FC<AdminApplicationsPageProps> = ({
                       : 'DANH SÁCH THÍ SINH — MẢNG MÚA (TRADITIONAL)'}
                   </h1>
                   <p className="text-xs sm:text-sm text-[#91A4BB] mt-0.5">
-                    Quản lý hồ sơ, trạng thái tuyển chọn và chấm điểm Ban Giám Khảo CLB Âm nhạc HUFLIT 2026.
+                    Quản lý hồ sơ, sửa xóa thông tin, gửi email xác nhận và chấm điểm Ban Giám Khảo CLB Âm nhạc HUFLIT 2026.
                   </p>
                 </div>
 
@@ -959,6 +993,37 @@ export const AdminApplicationsPage: React.FC<AdminApplicationsPageProps> = ({
             </div>
           </div>
 
+          {/* BATCH ACTION FLOATING BAR */}
+          {selectedIds.size > 0 && (
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#09172B] via-[#0E2A4D] to-[#09172B] border border-[#70D7FF]/40 shadow-[0_10px_35px_rgba(0,0,0,0.7)] flex flex-wrap items-center justify-between gap-3 animate-fadeIn">
+              <div className="flex items-center gap-3 text-xs">
+                <span className="font-bold text-white flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-[#70D7FF]" />
+                  <span>Đã chọn <strong className="text-[#70D7FF] font-mono text-sm">{selectedIds.size}</strong> thí sinh</span>
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleOpenDeleteBatch}
+                  className="px-3.5 py-1.5 rounded-xl bg-red-600/20 hover:bg-red-600/30 text-red-300 border border-red-500/40 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                  <span>Xóa {selectedIds.size} thí sinh đã chọn</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedIds(new Set())}
+                  className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-medium transition-colors cursor-pointer"
+                >
+                  Bỏ chọn
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Applications Table / Cards View */}
           <div className="rounded-2xl bg-[#09172B] border border-[#78B9F0]/15 overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
             {isLoading ? (
@@ -1004,7 +1069,21 @@ export const AdminApplicationsPage: React.FC<AdminApplicationsPageProps> = ({
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="border-b border-white/10 bg-[#050D1A]/50 text-[11px] font-mono uppercase tracking-wider text-[#91A4BB]">
-                        <th className="py-3.5 px-4 w-12 text-center">STT</th>
+                        <th className="py-3.5 px-3 w-10 text-center">
+                          <button
+                            type="button"
+                            onClick={handleToggleSelectAllOnPage}
+                            className="text-[#91A4BB] hover:text-white transition-colors cursor-pointer"
+                            title="Chọn tất cả trên trang này"
+                          >
+                            {selectedIds.size === displayedApplications.length && displayedApplications.length > 0 ? (
+                              <CheckSquare className="w-4 h-4 text-[#70D7FF]" />
+                            ) : (
+                              <Square className="w-4 h-4" />
+                            )}
+                          </button>
+                        </th>
+                        <th className="py-3.5 px-3 w-12 text-center">STT</th>
                         <th className="py-3.5 px-4">Họ và tên</th>
                         <th className="py-3.5 px-4">MSSV</th>
                         <th className="py-3.5 px-4">Mảng</th>
@@ -1012,19 +1091,38 @@ export const AdminApplicationsPage: React.FC<AdminApplicationsPageProps> = ({
                         <th className="py-3.5 px-4">Link Beat / Nhạc</th>
                         <th className="py-3.5 px-4">Video Demo</th>
                         <th className="py-3.5 px-4">Trạng thái</th>
-                        <th className="py-3.5 px-4 text-right">Chi tiết</th>
+                        <th className="py-3.5 px-4 text-right">Thao tác</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5 text-xs">
                       {displayedApplications.map((app, index) => {
                         const stt = (currentPage - 1) * 25 + index + 1
+                        const isSelected = selectedIds.has(app.id)
+
                         return (
                           <tr
                             key={app.id}
                             onClick={() => setSelectedAppId(app.id)}
-                            className="h-[64px] hover:bg-[#0E2A4D]/50 transition-colors cursor-pointer group"
+                            className={`h-[64px] transition-colors cursor-pointer group ${
+                              isSelected ? 'bg-[#398BFF]/10' : 'hover:bg-[#0E2A4D]/50'
+                            }`}
                           >
-                            <td className="py-3 px-4 text-center font-mono text-[#91A4BB]/70">
+                            {/* Checkbox */}
+                            <td className="py-3 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                type="button"
+                                onClick={() => handleToggleSelectCandidate(app.id)}
+                                className="text-[#91A4BB] hover:text-white transition-colors cursor-pointer"
+                              >
+                                {isSelected ? (
+                                  <CheckSquare className="w-4 h-4 text-[#70D7FF]" />
+                                ) : (
+                                  <Square className="w-4 h-4 text-white/30 hover:text-white" />
+                                )}
+                              </button>
+                            </td>
+
+                            <td className="py-3 px-3 text-center font-mono text-[#91A4BB]/70">
                               {stt < 10 ? `0${stt}` : stt}
                             </td>
 
@@ -1094,7 +1192,7 @@ export const AdminApplicationsPage: React.FC<AdminApplicationsPageProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => handleCopy(app.id + '_beat', app.beatUrl)}
-                                    className="p-1 rounded-md bg-white/5 hover:bg-white/15 text-[#91A4BB] hover:text-white transition-colors"
+                                    className="p-1 rounded-md bg-white/5 hover:bg-white/15 text-[#91A4BB] hover:text-white transition-colors cursor-pointer"
                                     title="Copy link Beat"
                                   >
                                     {copiedId === app.id + '_beat' ? (
@@ -1131,17 +1229,36 @@ export const AdminApplicationsPage: React.FC<AdminApplicationsPageProps> = ({
 
                             <td className="py-3 px-4">{renderStatusBadge(app.status)}</td>
 
-                            <td className="py-3 px-4 text-right">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setSelectedAppId(app.id)
-                                }}
-                                className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-[#398BFF]/20 text-xs font-semibold text-[#91A4BB] hover:text-[#70D7FF] border border-white/10 hover:border-[#70D7FF]/40 transition-all cursor-pointer"
-                              >
-                                Xem
-                              </button>
+                            {/* ROW ACTIONS: SỬA & XÓA & XEM */}
+                            <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEdit(app)}
+                                  className="p-1.5 rounded-lg bg-[#398BFF]/15 hover:bg-[#398BFF]/30 text-[#70D7FF] border border-[#70D7FF]/30 transition-all cursor-pointer"
+                                  title="Sửa thông tin thí sinh"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenDeleteSingle(app)}
+                                  className="p-1.5 rounded-lg bg-red-500/15 hover:bg-red-500/30 text-red-400 hover:text-red-300 border border-red-500/30 transition-all cursor-pointer"
+                                  title="Xóa hồ sơ thí sinh này"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedAppId(app.id)}
+                                  className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-xs font-semibold text-[#B8CDE5] hover:text-white border border-white/10 transition-all cursor-pointer"
+                                  title="Xem chi tiết hồ sơ"
+                                >
+                                  Xem
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         )
@@ -1155,21 +1272,33 @@ export const AdminApplicationsPage: React.FC<AdminApplicationsPageProps> = ({
                   {displayedApplications.map((app) => (
                     <div
                       key={app.id}
-                      onClick={() => setSelectedAppId(app.id)}
-                      className="p-4 rounded-2xl bg-[#050D1A]/60 border border-[#78B9F0]/15 space-y-3 cursor-pointer hover:border-[#70D7FF]/40 transition-all"
+                      className="p-4 rounded-2xl bg-[#050D1A]/60 border border-[#78B9F0]/15 space-y-3 transition-all"
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="font-semibold text-white flex items-center gap-2">
-                            <span>{app.fullName}</span>
-                            {sentEmailIdsSet.has(app.id) && (
-                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-[#10B981]/15 text-[#34D399] text-[10px] font-mono border border-[#10B981]/30">
-                                <Mail className="w-2.5 h-2.5" />
-                                <span>Đã gửi</span>
-                              </span>
+                        <div className="flex items-start gap-2.5">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleSelectCandidate(app.id)}
+                            className="mt-0.5 text-[#91A4BB] hover:text-white"
+                          >
+                            {selectedIds.has(app.id) ? (
+                              <CheckSquare className="w-4 h-4 text-[#70D7FF]" />
+                            ) : (
+                              <Square className="w-4 h-4 text-white/30" />
                             )}
+                          </button>
+                          <div>
+                            <div className="font-semibold text-white flex items-center gap-2">
+                              <span>{app.fullName}</span>
+                              {sentEmailIdsSet.has(app.id) && (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-[#10B981]/15 text-[#34D399] text-[10px] font-mono border border-[#10B981]/30">
+                                  <Mail className="w-2.5 h-2.5" />
+                                  <span>Đã gửi</span>
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs font-mono text-[#70D7FF]">MSSV: {app.studentId}</div>
                           </div>
-                          <div className="text-xs font-mono text-[#70D7FF]">MSSV: {app.studentId}</div>
                         </div>
                         {renderStatusBadge(app.status)}
                       </div>
@@ -1181,7 +1310,7 @@ export const AdminApplicationsPage: React.FC<AdminApplicationsPageProps> = ({
 
                       {/* Beat / Music links on mobile */}
                       {app.beatUrl && (
-                        <div className="flex items-center justify-between text-xs pt-2 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between text-xs pt-2 border-t border-white/5">
                           <span className="text-[#70D7FF] text-[11px] font-semibold flex items-center gap-1">
                             <Music className="w-3 h-3" /> Link Beat
                           </span>
@@ -1197,16 +1326,34 @@ export const AdminApplicationsPage: React.FC<AdminApplicationsPageProps> = ({
                         </div>
                       )}
 
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setSelectedAppId(app.id)
-                        }}
-                        className="w-full py-2 rounded-xl bg-white/5 text-xs font-semibold text-[#70D7FF] border border-white/10 text-center"
-                      >
-                        Xem chi tiết hồ sơ
-                      </button>
+                      {/* Mobile Actions: Sửa, Xóa, Xem */}
+                      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/10">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEdit(app)}
+                          className="py-1.5 rounded-xl bg-[#398BFF]/20 text-[#70D7FF] text-xs font-semibold flex items-center justify-center gap-1 border border-[#70D7FF]/30"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          <span>Sửa</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleOpenDeleteSingle(app)}
+                          className="py-1.5 rounded-xl bg-red-500/20 text-red-300 text-xs font-semibold flex items-center justify-center gap-1 border border-red-500/30"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Xóa</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAppId(app.id)}
+                          className="py-1.5 rounded-xl bg-white/10 text-white text-xs font-semibold flex items-center justify-center"
+                        >
+                          Xem chi tiết
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1248,6 +1395,36 @@ export const AdminApplicationsPage: React.FC<AdminApplicationsPageProps> = ({
           </div>
         </main>
       </div>
+
+      {/* Edit Candidate Modal */}
+      <EditApplicantModal
+        isOpen={isEditModalOpen}
+        application={editingCandidate}
+        onClose={() => {
+          setIsEditModalOpen(false)
+          setEditingCandidate(null)
+        }}
+        onSaved={handleCandidateSaved}
+        onDeleted={(deletedId) => {
+          setApplications((prev) => prev.filter((a) => a.id !== deletedId))
+          loadData()
+          if (selectedAppId === deletedId) setSelectedAppId(null)
+        }}
+      />
+
+      {/* Delete Confirmation Modal (Single & Batch) */}
+      <DeleteConfirmModal
+        isOpen={isDeleteModalOpen}
+        candidate={deletingCandidate}
+        candidateList={selectedCandidatesList}
+        isBatch={isBatchDelete}
+        isDeleting={isDeletingProgress}
+        onClose={() => {
+          setIsDeleteModalOpen(false)
+          setDeletingCandidate(null)
+        }}
+        onConfirm={handleConfirmDelete}
+      />
 
       {/* PDF Score Sheet Export Modal */}
       {isPdfModalOpen && (
@@ -1442,6 +1619,13 @@ export const AdminApplicationsPage: React.FC<AdminApplicationsPageProps> = ({
           applications={applications}
           onClose={() => setSelectedAppId(null)}
           onApplicationUpdated={handleApplicationUpdated}
+          onEditRequest={(app) => {
+            setSelectedAppId(null)
+            handleOpenEdit(app)
+          }}
+          onDeleteRequest={(app) => {
+            handleOpenDeleteSingle(app)
+          }}
         />
       )}
     </div>

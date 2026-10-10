@@ -196,6 +196,87 @@ export function updateClientApplication(
   return updated
 }
 
+/**
+ * Full edit of candidate application details
+ */
+export function editClientApplication(
+  id: string,
+  payload: Partial<ApplicationItem>
+): ApplicationItem {
+  const apps = getClientApplications()
+  const index = apps.findIndex((a) => a.id === id)
+  if (index === -1) {
+    throw new Error('Không tìm thấy hồ sơ để chỉnh sửa.')
+  }
+
+  const existing = apps[index]
+  const updated: ApplicationItem = {
+    ...existing,
+    ...payload,
+    id: existing.id, // ID remains invariant
+    updatedAt: new Date().toISOString(),
+  }
+
+  apps[index] = updated
+  saveClientApplications(apps)
+  return updated
+}
+
+/**
+ * Deletes a single candidate application by ID
+ */
+export function deleteClientApplication(id: string): void {
+  const apps = getClientApplications()
+  const filtered = apps.filter((a) => a.id !== id)
+  if (filtered.length === apps.length) {
+    throw new Error('Không tìm thấy hồ sơ để xóa.')
+  }
+  saveClientApplications(filtered)
+}
+
+/**
+ * Deletes multiple candidate applications by ID list
+ */
+export function deleteBatchClientApplications(ids: string[]): { deletedCount: number } {
+  const idSet = new Set(ids)
+  const apps = getClientApplications()
+  const remaining = apps.filter((a) => !idSet.has(a.id))
+  const deletedCount = apps.length - remaining.length
+  saveClientApplications(remaining)
+  return { deletedCount }
+}
+
+/**
+ * Manually add candidate by Admin
+ */
+export function createManualClientApplication(data: Partial<ApplicationItem>): ApplicationItem {
+  const apps = getClientApplications()
+  const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase()
+  const id = data.id || `HMC-2026-${Date.now().toString(36).toUpperCase().slice(-4)}-${randomSuffix}`
+  const now = new Date().toISOString()
+
+  const newApp: ApplicationItem = {
+    id,
+    fullName: (data.fullName || '').trim() || 'Thí sinh mới',
+    email: (data.email || '').trim().toLowerCase(),
+    studentId: (data.studentId || '').trim().toUpperCase(),
+    castingDivision: (data.castingDivision || 'vocal') as 'vocal' | 'dancer' | 'traditional_dance',
+    castingSong: (data.castingSong || '').trim() || 'Chưa cập nhật',
+    beatUrl: (data.beatUrl || '').trim() || 'https://youtube.com',
+    hasPerformanceExperience: Boolean(data.hasPerformanceExperience),
+    performanceUrl: (data.performanceUrl || '').trim(),
+    passion: (data.passion || '').trim(),
+    status: (data.status || 'new') as CastingStatus,
+    adminNote: (data.adminNote || '').trim(),
+    createdAt: now,
+    updatedAt: now,
+  }
+
+  apps.unshift(newApp)
+  saveClientApplications(apps)
+  return newApp
+}
+
 export function queryClientApplications(params: ApplicationQueryParams = {}): ApplicationsResponse {
   const allApps = getClientApplications()
 
