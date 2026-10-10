@@ -340,6 +340,61 @@ export const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
           {/* TAB 1: PREVIEW EMAIL */}
           {activeTab === 'preview_email' && (
             <div className="space-y-4">
+              {/* Provider Status Banner */}
+              {emailConfig.provider === 'simulation' ? (
+                <div className="p-3.5 rounded-2xl bg-[#FFE082]/10 border border-[#FFE082]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <div className="flex items-start gap-2.5 text-[#FFE082]">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <div className="space-y-0.5 text-[#E2EBF6]">
+                      <span className="font-bold text-[#FFE082]">Chế độ hiện tại: Mô phỏng (Chưa kết nối API Mail Server)</span>
+                      <p className="text-[11.5px] text-[#91A4BB]">
+                        Để hệ thống tự động gửi thẳng vào hộp thư Gmail của thí sinh, bạn chuyển sang tab <strong className="text-[#FFE082]">“Cấu Hình Gửi Thật”</strong> (chỉ cần dán Resend API Key miễn phí).
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('email_settings')}
+                      className="px-3 py-1.5 rounded-xl bg-[#FFE082]/20 hover:bg-[#FFE082]/30 text-[#FFE082] font-bold text-xs border border-[#FFE082]/40 transition-colors cursor-pointer"
+                    >
+                      ⚙️ Cài đặt API
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const emails = targetCandidates.map((c) => c.email).join(',')
+                        navigator.clipboard.writeText(emails)
+                        sound.playSuccess()
+                        alert(`Đã sao chép ${targetCandidates.length} địa chỉ email vào bộ nhớ tạm!`)
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium text-xs border border-white/10 transition-colors cursor-pointer"
+                      title="Sao chép toàn bộ email để dán vào ô BCC của Gmail"
+                    >
+                      📋 Copy BCC
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-2xl bg-[#10B981]/15 border border-[#10B981]/30 flex items-center justify-between text-xs text-[#34D399]">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>
+                      Đã kết nối dịch vụ gửi email tự động: <strong>{emailConfig.provider.toUpperCase()}</strong>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('email_settings')}
+                    className="text-xs text-[#70D7FF] underline hover:text-white"
+                  >
+                    Thay đổi cấu hình
+                  </button>
+                </div>
+              )}
+
               {/* Custom Note input from Admin */}
               <div className="p-4 rounded-2xl bg-[#050D1A]/70 border border-[#78B9F0]/20 space-y-2">
                 <label className="text-xs font-semibold uppercase tracking-wider text-[#70D7FF] flex items-center gap-2">
