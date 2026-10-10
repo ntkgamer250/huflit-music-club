@@ -5,6 +5,7 @@ import { AboutScene } from './components/scenes/AboutScene'
 import { FamilyScene } from './components/scenes/FamilyScene'
 import { CastingGuideScene } from './components/scenes/CastingGuideScene'
 import { SoundWaveLayer } from './components/effects/SoundWaveLayer'
+import { FloatingOrangeMascot } from './components/common/FloatingOrangeMascot'
 import { RegistrationModal } from './components/common/RegistrationModal'
 import { AdminLoginPage } from './components/admin/AdminLoginPage'
 import { AdminApplicationsPage } from './components/admin/AdminApplicationsPage'
@@ -120,18 +121,6 @@ export function App() {
           { opacity: 1, y: 0, duration: 0.8 },
           '-=0.6'
         )
-        .fromTo(
-          '.hero-mic',
-          { scale: 0.96, opacity: 0.7 },
-          { scale: 1, opacity: 1, duration: 1.1, ease: 'power2.out' },
-          '-=0.7'
-        )
-        .fromTo(
-          '.hero-soundwave',
-          { opacity: 0.3 },
-          { opacity: 1, duration: 1.2 },
-          '-=0.9'
-        )
 
       // ==========================================
       // 2. HERO SCROLL EXIT (100% Reversible Scrub)
@@ -148,44 +137,6 @@ export function App() {
             trigger: '#hero',
             start: 'top top',
             end: '55% top',
-            scrub: true,
-            invalidateOnRefresh: true,
-          },
-        }
-      )
-
-      // Microphone: Stays visible longer, subtle upward motion & scale
-      gsap.fromTo(
-        '.hero-mic',
-        { y: 0, scale: 1, opacity: 1 },
-        {
-          y: -30,
-          scale: 0.97,
-          opacity: 0.82,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: '#hero',
-            start: 'top top',
-            end: '75% top',
-            scrub: true,
-            invalidateOnRefresh: true,
-          },
-        }
-      )
-
-      // Soundwave: Follows transition toward About scene
-      gsap.fromTo(
-        '.hero-soundwave',
-        { y: 0, scale: 1, opacity: 1 },
-        {
-          y: 15,
-          scale: 1.04,
-          opacity: 0.85,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: '#hero',
-            start: 'top top',
-            end: '80% top',
             scrub: true,
             invalidateOnRefresh: true,
           },
@@ -788,6 +739,9 @@ export function App() {
           />
         </div>
       </main>
+
+      {/* Persistent Floating Orange Mascot at Bottom-Left Screen */}
+      <FloatingOrangeMascot onOpenRegister={() => setIsRegisterOpen(true)} />
 
       {/* Registration Modal */}
       <RegistrationModal

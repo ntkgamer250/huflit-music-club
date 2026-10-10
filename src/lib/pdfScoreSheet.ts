@@ -1,29 +1,52 @@
 import { ApplicationItem } from './adminApi'
 
 /**
+ * Parses full name into Given Name (Tên) and Family/Middle Name (Họ và Tên đệm).
+ * E.g. "Nguyễn Tuấn Anh" -> { givenName: "Anh", familyMiddle: "Nguyễn Tuấn" }
+ * E.g. "Nguyễn Bảo" -> { givenName: "Bảo", familyMiddle: "Nguyễn" }
+ */
+export function parseVietnameseName(fullName: string): { givenName: string; familyMiddle: string } {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return { givenName: '', familyMiddle: '' }
+  if (parts.length === 1) return { givenName: parts[0], familyMiddle: '' }
+  const givenName = parts[parts.length - 1]
+  const familyMiddle = parts.slice(0, parts.length - 1).join(' ')
+  return { givenName, familyMiddle }
+}
+
+/**
  * Extracts Vietnamese given name (the last word in full name)
  * E.g. "Nguyễn Hoàng Minh" -> "Minh"
  */
 export function getVietnameseGivenName(fullName: string): string {
-  const parts = fullName.trim().split(/\s+/)
-  return parts[parts.length - 1] || ''
+  return parseVietnameseName(fullName).givenName
 }
 
 /**
  * Compares two Vietnamese full names alphabetically:
- * 1. Compare by given name (last word) using Vietnamese collation
- * 2. If given names are identical, compare the entire full name
+ * 1. Compare by given name (last word) alphabetically using Vietnamese collation
+ *    E.g. "Anh" (A) stands before "Bảo" (B) -> "Nguyễn Tuấn Anh" before "Nguyễn Bảo"
+ * 2. If given names are identical, compare by family & middle names ("Họ và tên đệm")
+ * 3. If still identical, compare the whole string
  */
 export function compareVietnameseNames(a: string, b: string): number {
-  const nameA = getVietnameseGivenName(a)
-  const nameB = getVietnameseGivenName(b)
-  const nameCmp = nameA.localeCompare(nameB, 'vi', { sensitivity: 'base' })
-  if (nameCmp !== 0) return nameCmp
-  return a.localeCompare(b, 'vi', { sensitivity: 'base' })
+  const parsedA = parseVietnameseName(a)
+  const parsedB = parseVietnameseName(b)
+
+  // 1. So sánh Tên (Given Name) theo bảng chữ cái A-Z
+  const cmpGiven = parsedA.givenName.localeCompare(parsedB.givenName, 'vi', { sensitivity: 'base' })
+  if (cmpGiven !== 0) return cmpGiven
+
+  // 2. Nếu Tên trùng nhau hoàn toàn, so sánh Họ và Tên đệm
+  const cmpFamily = parsedA.familyMiddle.localeCompare(parsedB.familyMiddle, 'vi', { sensitivity: 'base' })
+  if (cmpFamily !== 0) return cmpFamily
+
+  // 3. Phân biệt chính xác từng dấu nếu có
+  return a.localeCompare(b, 'vi')
 }
 
 /**
- * Sorts an array of candidates alphabetically by Vietnamese name within each division
+ * Sorts an array of candidates alphabetically by Vietnamese given name (A-Z) within each division
  * Division order: Vocal -> Dancer -> Traditional Dance
  */
 export function sortCandidatesByDivisionAndName(candidates: ApplicationItem[]): {
@@ -61,8 +84,11 @@ export interface ScoreSheetExportOptions {
 }
 
 /**
- * Generates and opens a high-quality printable PDF Score Sheet for Audition Judges
- * with 8 ruled comment lines per candidate, grouped by division and sorted alphabetically A-Z.
+ * Generates and opens a high-quality, ultra-compact printable PDF Score Sheet for Audition Judges:
+ * - 2-column table per division
+ * - Left column: Candidate STT, Name + MSSV on single line, casting piece & experience (no email)
+ * - Right column: Top-right evaluation checkboxes and exactly 3 ruled comment lines
+ * - Removed signature block to maximize space 100% for candidate evaluation rows
  */
 export function exportScoreSheetPdf(
   candidates: ApplicationItem[],
@@ -82,7 +108,7 @@ export function exportScoreSheetPdf(
   if (division === 'all' || division === 'vocal') {
     if (sortedGroups.vocal.length > 0) {
       activeGroups.push({
-        title: 'MẢNG HÁT (VOCAL) — DANH SÁCH SẮP XẾP TỪ A ĐẾN Z',
+        title: 'MẢNG HÁT (VOCAL) — DANH SÁCH SẮP XẾP THEO TÊN (A → Z)',
         divisionKey: 'vocal',
         list: sortedGroups.vocal,
       })
@@ -92,7 +118,7 @@ export function exportScoreSheetPdf(
   if (division === 'all' || division === 'dancer') {
     if (sortedGroups.dancer.length > 0) {
       activeGroups.push({
-        title: 'MẢNG NHẢY (DANCE) — DANH SÁCH SẮP XẾP TỪ A ĐẾN Z',
+        title: 'MẢNG NHẢY (DANCE) — DANH SÁCH SẮP XẾP THEO TÊN (A → Z)',
         divisionKey: 'dancer',
         list: sortedGroups.dancer,
       })
@@ -102,7 +128,7 @@ export function exportScoreSheetPdf(
   if (division === 'all' || division === 'traditional_dance') {
     if (sortedGroups.traditional_dance.length > 0) {
       activeGroups.push({
-        title: 'MẢNG MÚA (TRADITIONAL / CONTEMPORARY) — DANH SÁCH SẮP XẾP TỪ A ĐẾN Z',
+        title: 'MẢNG MÚA (TRADITIONAL / CONTEMPORARY) — DANH SÁCH SẮP XẾP THEO TÊN (A → Z)',
         divisionKey: 'traditional_dance',
         list: sortedGroups.traditional_dance,
       })
@@ -115,82 +141,10 @@ export function exportScoreSheetPdf(
   }
 
   // Open print preview window
-  const printWindow = window.open('', '_blank', 'width=1000,height=900')
+  const printWindow = window.open('', '_blank', 'width=1050,height=900')
   if (!printWindow) {
     alert('Trình duyệt đang chặn cửa sổ pop-up. Vui lòng cho phép mở pop-up để xem và in phiếu chấm điểm PDF.')
     return
-  }
-
-  const renderCandidateCard = (c: ApplicationItem, index: number, totalInDiv: number) => {
-    return `
-      <div class="candidate-card">
-        <!-- Top Info Header -->
-        <div class="card-header">
-          <div class="candidate-meta">
-            <span class="stt-badge">STT: ${index + 1 < 10 ? '0' + (index + 1) : index + 1}/${totalInDiv < 10 ? '0' + totalInDiv : totalInDiv}</span>
-            <span class="candidate-name">${c.fullName.toUpperCase()}</span>
-            <span class="candidate-mssv">MSSV: <strong>${c.studentId}</strong></span>
-            <span class="candidate-code">Mã HS: ${c.id}</span>
-          </div>
-          <div class="candidate-quick-eval">
-            <span class="checkbox-box">[ &nbsp; ] ĐẠT</span>
-            <span class="checkbox-box">[ &nbsp; ] DỰ BỊ</span>
-            <span class="checkbox-box">[ &nbsp; ] LOẠI</span>
-          </div>
-        </div>
-
-        <!-- Audition Detail Bar -->
-        <div class="audition-info-bar">
-          <div class="info-item">
-            <span class="label">Bài/Tác phẩm casting:</span>
-            <span class="value font-bold">${c.castingSong || '(Chưa điền)'}</span>
-          </div>
-          <div class="info-item">
-            <span class="label">Kinh nghiệm biểu diễn:</span>
-            <span class="value">${c.hasPerformanceExperience ? 'Đã từng diễn bên ngoài' : 'Chưa có'}</span>
-          </div>
-          <div class="info-item">
-            <span class="label">Email liên hệ:</span>
-            <span class="value">${c.email}</span>
-          </div>
-        </div>
-
-        <!-- Scoring Criteria Table -->
-        <table class="scoring-table">
-          <thead>
-            <tr>
-              <th style="width: 25%;">Kỹ thuật / Giọng / Vũ đạo (Thang 10)</th>
-              <th style="width: 25%;">Tiết tấu & Nhịp phách (Thang 10)</th>
-              <th style="width: 25%;">Thần thái & Cảm xúc (Thang 10)</th>
-              <th style="width: 25%;">TỔNG ĐIỂM (Thang 30)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="score-cell">&nbsp;</td>
-              <td class="score-cell">&nbsp;</td>
-              <td class="score-cell">&nbsp;</td>
-              <td class="score-cell total-cell">&nbsp;</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <!-- 8-Line Ruled Feedback Area -->
-        <div class="comments-section">
-          <div class="comments-title">NHẬN XÉT CỦA BAN GIÁM KHẢO (ĐÁNH GIÁ CHI TIẾT &amp; ĐỀ XUẤT XẾP BAN/CA BIỂU DIỄN):</div>
-          <div class="ruled-lines">
-            <div class="rule-line"><span class="line-num">1</span></div>
-            <div class="rule-line"><span class="line-num">2</span></div>
-            <div class="rule-line"><span class="line-num">3</span></div>
-            <div class="rule-line"><span class="line-num">4</span></div>
-            <div class="rule-line"><span class="line-num">5</span></div>
-            <div class="rule-line"><span class="line-num">6</span></div>
-            <div class="rule-line"><span class="line-num">7</span></div>
-            <div class="rule-line"><span class="line-num">8</span></div>
-          </div>
-        </div>
-      </div>
-    `
   }
 
   const htmlContent = `
@@ -198,7 +152,7 @@ export function exportScoreSheetPdf(
     <html lang="vi">
     <head>
       <meta charset="UTF-8" />
-      <title>HMC_Bang_Cham_Diem_Casting_2026</title>
+      <title>HMC_Phieu_Danh_Gia_Cham_Diem_Casting_2026</title>
       <style>
         * {
           box-sizing: border-box;
@@ -210,9 +164,9 @@ export function exportScoreSheetPdf(
           font-family: 'Times New Roman', Times, serif;
           color: #000;
           background: #fff;
-          font-size: 13px;
-          line-height: 1.35;
-          padding: 10mm;
+          font-size: 12.5px;
+          line-height: 1.3;
+          padding: 8mm;
         }
 
         .no-print-toolbar {
@@ -222,7 +176,7 @@ export function exportScoreSheetPdf(
           right: 0;
           background: #071a33;
           color: #fff;
-          padding: 12px 20px;
+          padding: 10px 20px;
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -235,10 +189,10 @@ export function exportScoreSheetPdf(
           background: #398bff;
           color: #fff;
           border: none;
-          padding: 8px 18px;
-          border-radius: 8px;
+          padding: 7px 16px;
+          border-radius: 6px;
           font-weight: 600;
-          font-size: 14px;
+          font-size: 13.5px;
           cursor: pointer;
         }
 
@@ -247,8 +201,8 @@ export function exportScoreSheetPdf(
         }
 
         .print-container {
-          max-width: 820px;
-          margin: 45px auto 0 auto;
+          max-width: 920px;
+          margin: 40px auto 0 auto;
         }
 
         /* HEADER */
@@ -257,8 +211,8 @@ export function exportScoreSheetPdf(
           justify-content: space-between;
           align-items: flex-start;
           border-bottom: 2px solid #000;
-          padding-bottom: 8px;
-          margin-bottom: 12px;
+          padding-bottom: 5px;
+          margin-bottom: 8px;
         }
 
         .header-left {
@@ -267,21 +221,21 @@ export function exportScoreSheetPdf(
         }
 
         .header-left .school {
-          font-size: 11px;
+          font-size: 10px;
           text-transform: uppercase;
         }
 
         .header-left .org {
-          font-size: 11.5px;
+          font-size: 10.5px;
           font-weight: bold;
           text-transform: uppercase;
         }
 
         .header-left .divider {
-          width: 80px;
+          width: 70px;
           height: 1px;
           background: #000;
-          margin: 3px auto;
+          margin: 2px auto;
         }
 
         .header-right {
@@ -290,258 +244,254 @@ export function exportScoreSheetPdf(
         }
 
         .header-right .club-title {
-          font-size: 12px;
+          font-size: 11px;
           font-weight: bold;
           text-transform: uppercase;
           color: #000;
         }
 
         .header-right .event-title {
-          font-size: 11px;
+          font-size: 10px;
           font-style: italic;
         }
 
         .doc-title-block {
           text-align: center;
-          margin: 14px 0 10px 0;
+          margin: 8px 0 6px 0;
         }
 
         .doc-title {
-          font-size: 18px;
+          font-size: 16px;
           font-weight: bold;
           text-transform: uppercase;
           letter-spacing: 0.5px;
         }
 
         .doc-subtitle {
-          font-size: 12px;
+          font-size: 11px;
           font-style: italic;
-          margin-top: 2px;
+          margin-top: 1px;
         }
 
         .meta-info-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 6px 20px;
-          margin-bottom: 15px;
-          font-size: 12.5px;
+          gap: 3px 16px;
+          margin-bottom: 10px;
+          font-size: 11.5px;
           border: 1px dashed #666;
-          padding: 8px 12px;
-          border-radius: 4px;
+          padding: 5px 10px;
+          border-radius: 3px;
         }
 
         /* DIVISION SECTION */
         .division-section {
-          margin-bottom: 25px;
+          margin-bottom: 16px;
           page-break-after: auto;
         }
 
         .division-heading {
           background: #0a1f44;
           color: #fff;
-          padding: 6px 12px;
-          font-size: 13.5px;
+          padding: 4px 8px;
+          font-size: 12px;
           font-weight: bold;
           text-transform: uppercase;
           letter-spacing: 0.5px;
-          margin-bottom: 12px;
+          margin-bottom: 5px;
           border-radius: 3px;
           display: flex;
           justify-content: space-between;
           align-items: center;
         }
 
-        /* CANDIDATE CARD */
-        .candidate-card {
-          border: 1.5px solid #222;
-          border-radius: 6px;
-          padding: 10px 12px;
-          margin-bottom: 18px;
-          background: #fff;
+        /* 2-COLUMN EVALUATION TABLE */
+        .eval-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 10px;
+        }
+
+        .eval-table thead th {
+          background: #1e293b;
+          color: #fff;
+          padding: 5px 8px;
+          font-size: 11px;
+          font-weight: bold;
+          text-transform: uppercase;
+          letter-spacing: 0.3px;
+          border: 1.5px solid #1e293b;
+        }
+
+        .eval-table thead th.th-info {
+          width: 48%;
+          text-align: left;
+        }
+
+        .eval-table thead th.th-eval {
+          width: 52%;
+          text-align: left;
+        }
+
+        .candidate-row {
           page-break-inside: avoid;
           break-inside: avoid;
         }
 
-        .card-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          border-bottom: 1px solid #333;
-          padding-bottom: 5px;
-          margin-bottom: 6px;
+        .candidate-row td {
+          border: 1.5px solid #333;
+          padding: 5px 8px;
+          vertical-align: top;
+          background: #fff;
         }
 
-        .candidate-meta {
+        /* LEFT COLUMN: CANDIDATE INFO (COMPACT) */
+        .col-info {
+          width: 48%;
+        }
+
+        .cand-headline {
           display: flex;
-          align-items: center;
-          gap: 10px;
+          align-items: baseline;
+          gap: 6px;
+          margin-bottom: 3px;
           flex-wrap: wrap;
         }
 
         .stt-badge {
-          background: #000;
+          background: #0a1f44;
           color: #fff;
           font-weight: bold;
-          font-size: 11px;
-          padding: 2px 6px;
-          border-radius: 3px;
+          font-size: 10px;
+          padding: 1px 5px;
+          border-radius: 2px;
           font-family: Arial, sans-serif;
+          white-space: nowrap;
         }
 
-        .candidate-name {
-          font-size: 15px;
-          font-weight: bold;
+        .cand-name-mssv {
+          font-size: 13px;
           color: #000;
         }
 
-        .candidate-mssv {
-          font-size: 12.5px;
+        .cand-name-mssv strong.name {
+          font-weight: bold;
+          text-transform: uppercase;
         }
 
-        .candidate-code {
-          font-size: 10.5px;
-          color: #555;
-          font-family: monospace;
+        .cand-name-mssv span.mssv {
+          margin-left: 6px;
+          font-size: 11.5px;
+          color: #1e293b;
         }
 
-        .candidate-quick-eval {
+        .cand-details-box {
+          background: #f8fafc;
+          border: 1px solid #cbd5e1;
+          border-radius: 2px;
+          padding: 3px 6px;
+          font-size: 11px;
+          line-height: 1.3;
+        }
+
+        .detail-item {
           display: flex;
-          gap: 8px;
-          font-size: 11.5px;
-          font-weight: bold;
+          gap: 4px;
+          margin-bottom: 1.5px;
         }
 
-        .checkbox-box {
-          border: 1px solid #333;
-          padding: 2px 6px;
-          border-radius: 3px;
-          background: #f9f9f9;
+        .detail-item:last-child {
+          margin-bottom: 0;
         }
 
-        .audition-info-bar {
-          display: grid;
-          grid-template-columns: 2fr 1fr 1fr;
-          gap: 8px;
-          font-size: 11.5px;
-          background: #f4f7fb;
-          padding: 5px 8px;
-          border-radius: 4px;
-          border: 1px solid #ddd;
-          margin-bottom: 8px;
-        }
-
-        .info-item .label {
-          color: #444;
+        .d-lbl {
+          color: #475569;
+          white-space: nowrap;
           font-size: 10.5px;
-          display: block;
+          min-width: 62px;
         }
 
-        .info-item .value {
+        .d-txt {
           color: #000;
+          word-break: break-word;
         }
 
         .font-bold {
           font-weight: bold;
         }
 
-        /* SCORING TABLE */
-        .scoring-table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-bottom: 8px;
-          font-size: 11px;
-          text-align: center;
+        /* RIGHT COLUMN: EVALUATION WITH TOP-RIGHT CHECKBOXES & 3 LINES */
+        .col-eval {
+          width: 52%;
         }
 
-        .scoring-table th, .scoring-table td {
-          border: 1px solid #444;
-          padding: 4px 6px;
-        }
-
-        .scoring-table th {
-          background: #eef2f7;
-          font-weight: bold;
-          font-size: 10.5px;
-        }
-
-        .score-cell {
-          height: 24px;
-        }
-
-        .total-cell {
-          font-weight: bold;
-          background: #fafafa;
-        }
-
-        /* 8-LINE RULED FEEDBACK */
-        .comments-section {
-          margin-top: 4px;
-        }
-
-        .comments-title {
-          font-size: 11px;
-          font-weight: bold;
-          color: #111;
+        .eval-top-bar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-bottom: 1px dashed #999;
+          padding-bottom: 2px;
           margin-bottom: 4px;
-          text-transform: uppercase;
         }
 
-        .ruled-lines {
+        .eval-title {
+          font-size: 10.5px;
+          font-weight: bold;
+          text-transform: uppercase;
+          color: #111;
+        }
+
+        /* TOP-RIGHT CHECKBOXES */
+        .checkbox-group-top-right {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+        }
+
+        .checkbox-item {
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          font-size: 10.5px;
+          font-weight: bold;
+          color: #000;
+        }
+
+        .box-square {
+          width: 13px;
+          height: 13px;
+          border: 1.5px solid #000;
+          border-radius: 2px;
+          display: inline-block;
+          background: #fff;
+        }
+
+        /* 3-LINE RULED FEEDBACK */
+        .ruled-feedback-container {
           border: 1px solid #999;
           background: #fff;
-          border-radius: 3px;
+          border-radius: 2px;
+          overflow: hidden;
         }
 
-        .rule-line {
-          height: 22px;
+        .rule-line-3 {
+          height: 19px;
           border-bottom: 1px dotted #888;
           display: flex;
           align-items: center;
-          padding-left: 6px;
+          padding-left: 5px;
         }
 
-        .rule-line:last-child {
+        .rule-line-3:last-child {
           border-bottom: none;
         }
 
-        .line-num {
+        .line-index {
           font-size: 9px;
-          color: #aaa;
+          color: #888;
           user-select: none;
-          width: 14px;
-        }
-
-        /* JUDGE SIGNATURE FOOTER */
-        .doc-footer {
-          margin-top: 30px;
-          display: flex;
-          justify-content: space-between;
-          page-break-inside: avoid;
-        }
-
-        .signature-box {
-          text-align: center;
-          width: 40%;
-        }
-
-        .signature-box .role {
-          font-weight: bold;
-          font-size: 12.5px;
-          text-transform: uppercase;
-        }
-
-        .signature-box .date {
-          font-size: 11.5px;
-          font-style: italic;
-          margin-bottom: 50px;
-        }
-
-        .signature-box .name {
-          font-weight: bold;
-          border-top: 1px dotted #888;
-          padding-top: 4px;
-          display: inline-block;
-          min-width: 160px;
+          width: 12px;
+          font-family: monospace;
         }
 
         @media print {
@@ -558,19 +508,19 @@ export function exportScoreSheetPdf(
             max-width: 100% !important;
           }
 
-          .candidate-card {
+          .candidate-row {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
           }
 
-          .division-heading {
+          .division-heading, .eval-table thead th {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
 
           @page {
             size: A4 portrait;
-            margin: 12mm 10mm;
+            margin: 8mm 7mm;
           }
         }
       </style>
@@ -578,8 +528,8 @@ export function exportScoreSheetPdf(
     <body>
       <div class="no-print-toolbar">
         <div>
-          <strong>BẢNG CHẤM ĐIỂM CASTING CLB ÂM NHẠC HUFLIT (HMC 2026)</strong>
-          <span style="font-size: 12px; opacity: 0.8; margin-left: 10px;">— Sắp xếp A → Z theo từng mảng</span>
+          <strong>BẢNG CHẤM ĐIỂM &amp; ĐÁNH GIÁ CASTING HMC 2026</strong>
+          <span style="font-size: 12px; opacity: 0.8; margin-left: 10px;">— Sắp xếp A → Z theo Tên thí sinh (Bảng 2 cột, 3 dòng nhận xét)</span>
         </div>
         <div style="display: flex; gap: 10px;">
           <button onclick="window.print()">🖨️ In hoặc Lưu file PDF</button>
@@ -604,7 +554,7 @@ export function exportScoreSheetPdf(
         <!-- TITLE BLOCK -->
         <div class="doc-title-block">
           <div class="doc-title">PHIẾU ĐÁNH GIÁ &amp; CHẤM ĐIỂM CASTING</div>
-          <div class="doc-subtitle">(Danh sách thí sinh được tự động sắp xếp theo bảng chữ cái A → Z theo từng lĩnh vực)</div>
+          <div class="doc-subtitle">(Danh sách thí sinh được tự động sắp xếp theo thứ tự chữ cái A → Z theo Tên trong từng mảng)</div>
         </div>
 
         <!-- META INFO -->
@@ -622,31 +572,72 @@ export function exportScoreSheetPdf(
             <div class="division-section">
               <div class="division-heading">
                 <span>${group.title}</span>
-                <span style="font-size: 11px; font-weight: normal; opacity: 0.9;">Tổng: ${group.list.length} thí sinh</span>
+                <span style="font-size: 11px; font-weight: normal; opacity: 0.9;">Tổng số: ${group.list.length} thí sinh</span>
               </div>
 
-              ${group.list
-                .map((c, idx) => renderCandidateCard(c, idx, group.list.length))
-                .join('')}
+              <table class="eval-table">
+                <thead>
+                  <tr>
+                    <th class="th-info">THÔNG TIN THÍ SINH</th>
+                    <th class="th-eval">NHẬN XÉT &amp; ĐÁNH GIÁ CỦA BAN GIÁM KHẢO</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${group.list
+                    .map(
+                      (c, idx) => `
+                    <tr class="candidate-row">
+                      <!-- CỘT BÊN TRÁI: THÔNG TIN THÍ SINH -->
+                      <td class="col-info">
+                        <div class="cand-headline">
+                          <span class="stt-badge">STT: ${idx + 1 < 10 ? '0' + (idx + 1) : idx + 1}/${group.list.length < 10 ? '0' + group.list.length : group.list.length}</span>
+                          <span class="cand-name-mssv">
+                            <strong class="name">${c.fullName}</strong>
+                            <span class="mssv">— MSSV: <strong>${c.studentId || 'Chưa có'}</strong></span>
+                          </span>
+                        </div>
+
+                        <div class="cand-details-box">
+                          <div class="detail-item">
+                            <span class="d-lbl">Tác phẩm:</span>
+                            <span class="d-txt font-bold">${c.castingSong || '(Chưa đăng ký)'}</span>
+                          </div>
+                          <div class="detail-item">
+                            <span class="d-lbl">Kinh nghiệm:</span>
+                            <span class="d-txt">${c.hasPerformanceExperience ? 'Đã từng diễn sân khấu' : 'Chưa có'}</span>
+                          </div>
+                        </div>
+                      </td>
+
+                      <!-- CỘT BÊN PHẢI: NHẬN XÉT VỚI Ô ĐÁNH DẤU TÍCH GÓC TRÊN BÊN PHẢI VÀ 3 DÒNG KẺ -->
+                      <td class="col-eval">
+                        <div class="eval-top-bar">
+                          <span class="eval-title">ĐÁNH GIÁ &amp; NHẬN XÉT:</span>
+                          <!-- Ô ĐÁNH DẤU TÍCH GÓC TRÊN BÊN PHẢI -->
+                          <div class="checkbox-group-top-right">
+                            <span class="checkbox-item"><span class="box-square"></span> ĐẠT</span>
+                            <span class="checkbox-item"><span class="box-square"></span> DỰ BỊ</span>
+                            <span class="checkbox-item"><span class="box-square"></span> LOẠI</span>
+                          </div>
+                        </div>
+
+                        <!-- 3 DÒNG KẺ NHẬN XÉT -->
+                        <div class="ruled-feedback-container">
+                          <div class="rule-line-3"><span class="line-index">1</span></div>
+                          <div class="rule-line-3"><span class="line-index">2</span></div>
+                          <div class="rule-line-3"><span class="line-index">3</span></div>
+                        </div>
+                      </td>
+                    </tr>
+                  `
+                    )
+                    .join('')}
+                </tbody>
+              </table>
             </div>
           `
           )
           .join('')}
-
-        <!-- SIGNATURES -->
-        <div class="doc-footer">
-          <div class="signature-box">
-            <div class="role">THƯ KÝ BAN TỔ CHỨC</div>
-            <div class="date">(Ký và ghi rõ họ tên)</div>
-            <div class="name">...................................................</div>
-          </div>
-
-          <div class="signature-box">
-            <div class="role">BAN GIÁM KHẢO CHẤM THI</div>
-            <div class="date">Ngày ..... tháng 11 năm 2026</div>
-            <div class="name">${judgeName ? judgeName : '...................................................'}</div>
-          </div>
-        </div>
       </div>
 
       <script>

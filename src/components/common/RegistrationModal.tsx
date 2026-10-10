@@ -169,13 +169,9 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
       }
     }
 
-    // Passion Textarea (Min 50 characters, Max 800)
-    const passionLength = formData.passion.trim().length
-    if (!passionLength) {
-      newErrors.passion = 'Vui lòng chia sẻ đôi điều về niềm đam mê âm nhạc của bạn.'
-    } else if (passionLength < 50) {
-      newErrors.passion = `Hãy viết thêm một chút nhé (cần tối thiểu 50 ký tự, hiện tại ${passionLength}/50).`
-    } else if (passionLength > 800) {
+    // Passion Textarea (Optional, Max 800)
+    const passionLength = (formData.passion || '').trim().length
+    if (passionLength > 800) {
       newErrors.passion = `Nội dung vượt quá giới hạn 800 ký tự (hiện tại ${passionLength}/800).`
     }
 
@@ -252,11 +248,10 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
   // Calculate Progress
   const calculateProgress = (): number => {
     let score = 0
-    if (formData.fullName && formData.email && formData.studentId) score += 25
-    if (formData.castingDivision) score += 25
-    if (formData.castingSong && formData.beatUrl) score += 25
-    if (formData.passion.trim().length >= 50) score += 25
-    return score
+    if (formData.fullName && formData.email && formData.studentId) score += 34
+    if (formData.castingDivision) score += 33
+    if (formData.castingSong && formData.beatUrl) score += 33
+    return Math.min(100, score)
   }
 
   const progressPercent = calculateProgress()
@@ -1065,13 +1060,11 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                       className="block text-sm font-medium text-[#B8CDE5]"
                     >
                       Chia sẻ niềm yêu thích âm nhạc / nghệ thuật của bạn với HMC nhé{' '}
-                      <span className="text-[#70D7FF] font-bold">*</span>
+                      <span className="text-[#91A4BB] font-normal text-xs">(Không bắt buộc)</span>
                     </label>
                     <span
                       className={`text-xs font-mono ${
-                        formData.passion.length >= 50 && formData.passion.length <= 800
-                          ? 'text-[#70D7FF]'
-                          : formData.passion.length > 800
+                        formData.passion.length > 800
                           ? 'text-[#FF6B6B] font-bold'
                           : 'text-[#91A4BB]'
                       }`}
@@ -1084,13 +1077,12 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                   <textarea
                     id={`${formId}-passion`}
                     rows={4}
-                    required
                     placeholder={
                       formData.castingDivision === 'vocal'
-                        ? 'Bạn yêu thích điều gì ở việc ca hát và âm nhạc? Bạn mong muốn trải nghiệm điều gì khi tham gia HMC?'
+                        ? 'Bạn yêu thích điều gì ở việc ca hát và âm nhạc? Bạn mong muốn trải nghiệm điều gì khi tham gia HMC? (Không bắt buộc)'
                         : formData.castingDivision === 'traditional_dance'
-                        ? 'Bạn yêu thích điều gì ở bộ môn múa và nghệ thuật biểu diễn? Bạn mong muốn trải nghiệm điều gì khi tham gia HMC?'
-                        : 'Điều gì khiến bạn yêu thích nhảy và biểu diễn? Bạn mong muốn trải nghiệm điều gì khi tham gia HMC?'
+                        ? 'Bạn yêu thích điều gì ở bộ môn múa và nghệ thuật biểu diễn? Bạn mong muốn trải nghiệm điều gì khi tham gia HMC? (Không bắt buộc)'
+                        : 'Điều gì khiến bạn yêu thích nhảy và biểu diễn? Bạn mong muốn trải nghiệm điều gì khi tham gia HMC? (Không bắt buộc)'
                     }
                     value={formData.passion}
                     onChange={(e) => {

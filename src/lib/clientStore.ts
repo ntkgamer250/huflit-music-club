@@ -161,7 +161,7 @@ export function addClientApplication(data: RecruitmentFormData): ApplicationItem
     beatUrl: data.beatUrl.trim(),
     hasPerformanceExperience: Boolean(data.hasPerformanceExperience),
     performanceUrl: (data.performanceUrl || '').trim(),
-    passion: data.passion.trim(),
+    passion: (data.passion || '').trim(),
     status: 'new',
     adminNote: '',
     createdAt: now,
@@ -223,6 +223,8 @@ export function queryClientApplications(params: ApplicationQueryParams = {}): Ap
         a.email.toLowerCase().includes(q) ||
         a.studentId.toLowerCase().includes(q) ||
         a.castingSong.toLowerCase().includes(q) ||
+        (a.beatUrl && a.beatUrl.toLowerCase().includes(q)) ||
+        (a.performanceUrl && a.performanceUrl.toLowerCase().includes(q)) ||
         a.passion.toLowerCase().includes(q) ||
         a.id.toLowerCase().includes(q)
     )

@@ -301,6 +301,68 @@ textarea,
   animation: lampGlowPulse 4.5s ease-in-out infinite;
 }
 
+/* Orange Mascot Cute Waddle / Dance Animation */
+@keyframes orangeWaddle {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg) scale(1, 1);
+  }
+  25% {
+    transform: translateY(-8px) rotate(-6deg) scale(0.97, 1.04);
+  }
+  50% {
+    transform: translateY(0px) rotate(0deg) scale(1.03, 0.96);
+  }
+  75% {
+    transform: translateY(-8px) rotate(6deg) scale(0.97, 1.04);
+  }
+}
+
+@keyframes orangeShadow {
+  0%, 50%, 100% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  25%, 75% {
+    transform: scale(0.72);
+    opacity: 0.18;
+  }
+}
+
+@keyframes musicNoteFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.6) rotate(0deg);
+  }
+  25% {
+    opacity: 0.95;
+  }
+  80% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-40px) translateX(12px) scale(1.1) rotate(18deg);
+  }
+}
+
+.animate-orange-waddle {
+  animation: orangeWaddle 1.6s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+.animate-orange-shadow {
+  animation: orangeShadow 1.6s ease-in-out infinite;
+  transform-origin: center center;
+}
+
+.animate-mascot-note-1 {
+  animation: musicNoteFloat 2.6s ease-out infinite;
+}
+
+.animate-mascot-note-2 {
+  animation: musicNoteFloat 3s ease-out infinite 1.3s;
+}
+
 /* Hero Falling Particles: Floating Petal-like Drift (Stars & Notes) */
 @keyframes heroParticleFall1 {
   0% {

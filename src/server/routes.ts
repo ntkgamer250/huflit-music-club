@@ -138,7 +138,7 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
       const performanceUrl = String(body.performanceUrl || '').trim()
       const passion = String(body.passion || '').trim()
 
-      if (!fullName || !email || !studentId || !castingDivision || !castingSong || !beatUrl || !passion) {
+      if (!fullName || !email || !studentId || !castingDivision || !castingSong || !beatUrl) {
         sendJson(res, 400, {
           error: 'Vui lòng điền đầy đủ các thông tin bắt buộc.',
         })
