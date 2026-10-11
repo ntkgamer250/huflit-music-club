@@ -27,10 +27,10 @@ export interface EmailProviderConfig {
 export const DEFAULT_EMAIL_CONFIG: EmailProviderConfig = {
   provider: 'resend',
   senderEmail: 'CLB Âm nhạc HUFLIT <onboarding@resend.dev>',
-  resendApiKey: '', // Dán mã re_... vào đây để kích hoạt gửi tự động
-  emailjsServiceId: '',
-  emailjsTemplateId: '',
-  emailjsPublicKey: '',
-  webhookUrl: '',
+  resendApiKey: (import.meta.env.VITE_RESEND_API_KEY as string) || '',
+  emailjsServiceId: (import.meta.env.VITE_EMAILJS_SERVICE_ID as string) || '',
+  emailjsTemplateId: (import.meta.env.VITE_EMAILJS_TEMPLATE_ID as string) || '',
+  emailjsPublicKey: (import.meta.env.VITE_EMAILJS_PUBLIC_KEY as string) || '',
+  webhookUrl: (import.meta.env.VITE_WEBHOOK_URL as string) || '',
   autoSendOnRegistration: true, // true: Tự động gửi mail ngay khi thí sinh đăng ký
 }
