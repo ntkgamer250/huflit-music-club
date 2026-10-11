@@ -652,6 +652,37 @@ export const EmailConfirmationModal: React.FC<EmailConfirmationModalProps> = ({
                   </span>
                 </div>
 
+                {/* Auto Send on Registration Toggle */}
+                <div className="p-3.5 rounded-xl bg-[#09172B] border border-[#70D7FF]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <div className="text-xs font-bold text-[#70D7FF] flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-[#70D7FF]" />
+                      <span>Tự động gửi Email xác nhận ngay khi thí sinh nộp đơn đăng ký:</span>
+                    </div>
+                    <p className="text-[11px] text-[#91A4BB]">
+                      Hệ thống sẽ lập tức cá nhân hóa thư và chuyển phát thẳng vào hòm thư thí sinh kèm lịch casting và đường dẫn thể lệ.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleSaveConfig({
+                        ...emailConfig,
+                        autoSendOnRegistration: emailConfig.autoSendOnRegistration === false ? true : false,
+                      })
+                    }
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none self-end sm:self-center ${
+                      emailConfig.autoSendOnRegistration !== false ? 'bg-[#398BFF]' : 'bg-gray-700'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                        emailConfig.autoSendOnRegistration !== false ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
                 {/* Provider Selector Buttons */}
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
                   <button

@@ -1,18 +1,9 @@
 import { ApplicationItem } from './adminApi'
 import { getAuditionPlanHtml } from './auditionPlanPdf'
+import { DEFAULT_EMAIL_CONFIG, EmailProviderConfig } from '../config/emailConfig'
 
-export interface EmailProviderConfig {
-  provider: 'resend' | 'emailjs' | 'webhook' | 'simulation'
-  // Resend
-  resendApiKey?: string
-  senderEmail?: string
-  // EmailJS
-  emailjsServiceId?: string
-  emailjsTemplateId?: string
-  emailjsPublicKey?: string
-  // Webhook / Google Apps Script
-  webhookUrl?: string
-}
+export type { EmailProviderConfig }
+export { DEFAULT_EMAIL_CONFIG }
 
 export interface EmailDispatchProgress {
   current: number
@@ -43,23 +34,18 @@ export const LIVE_WEBSITE_URL = 'https://huflitmusicclub.netlify.app'
 export const LIVE_CASTING_GUIDE_URL = 'https://huflitmusicclub.netlify.app/#casting-guide'
 
 /**
- * Returns saved email provider configuration from local storage
+ * Returns saved email provider configuration from local storage merged with defaults
  */
 export function getSavedEmailConfig(): EmailProviderConfig {
   try {
     const raw = localStorage.getItem(EMAIL_CONFIG_STORAGE_KEY)
     if (!raw) {
-      return {
-        provider: 'simulation',
-        senderEmail: 'CLB Âm nhạc HUFLIT <onboarding@resend.dev>',
-      }
+      return { ...DEFAULT_EMAIL_CONFIG }
     }
-    return JSON.parse(raw)
+    const parsed = JSON.parse(raw)
+    return { ...DEFAULT_EMAIL_CONFIG, ...parsed }
   } catch {
-    return {
-      provider: 'simulation',
-      senderEmail: 'CLB Âm nhạc HUFLIT <onboarding@resend.dev>',
-    }
+    return { ...DEFAULT_EMAIL_CONFIG }
   }
 }
 
@@ -256,9 +242,7 @@ export async function sendSingleRealEmail(
 
   // 1. Resend API via Netlify Serverless Function (Server-to-server, bypasses browser CORS)
   if (activeConfig.provider === 'resend') {
-    if (!activeConfig.resendApiKey) {
-      return { success: false, error: 'Chưa nhập Resend API Key.' }
-    }
+    const apiKey = activeConfig.resendApiKey?.trim() || ''
 
     try {
       let fromSender = activeConfig.senderEmail?.trim() || 'CLB Âm nhạc HUFLIT <onboarding@resend.dev>'
@@ -274,7 +258,7 @@ export async function sendSingleRealEmail(
         },
         body: JSON.stringify({
           provider: 'resend',
-          apiKey: activeConfig.resendApiKey.trim(),
+          apiKey: apiKey,
           from: fromSender,
           to: [toEmail.trim()],
           subject: subject,
@@ -681,6 +665,42 @@ export async function testWebhookUrlConnection(
       message:
         '❌ Không thể kết nối tới URL (Google từ chối hoặc trả về 404). Hãy chắc chắn bạn đã chọn Quyền truy cập: "Bất kỳ ai (Anyone)" khi Triển khai trên Google Apps Script.',
     }
+  }
+}
+
+/**
+ * Tự động gửi email xác nhận và thể lệ casting đến thí sinh ngay khi hoàn thành nộp đơn đăng ký
+ */
+export async function sendAutomaticRegistrationEmail(
+  candidate: ApplicationItem
+): Promise<{ success: boolean; error?: string }> {
+  const config = getSavedEmailConfig()
+
+  // Nếu người quản trị tắt tính năng tự động gửi
+  if (config.autoSendOnRegistration === false) {
+    return { success: false, error: 'Chế độ tự động gửi email đã tắt.' }
+  }
+
+  // Nếu đang để chế độ mô phỏng
+  if (config.provider === 'simulation') {
+    markEmailIdsAsSent([candidate.id])
+    return { success: true }
+  }
+
+  try {
+    const res = await sendSingleRealEmail(candidate.email, candidate, {
+      customNote: 'Chúc bạn có một buổi casting thật bùng nổ, tự tin và tỏa sáng cùng gia đình HUFLIT Music Club nhé!',
+      includePdfAttachment: true,
+      config,
+    })
+
+    if (res.success) {
+      markEmailIdsAsSent([candidate.id])
+    }
+    return res
+  } catch (err: any) {
+    console.warn('Lỗi khi tự động gửi email cho thí sinh:', err)
+    return { success: false, error: err.message || 'Lỗi gửi email tự động.' }
   }
 }
 

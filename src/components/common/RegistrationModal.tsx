@@ -15,6 +15,7 @@ import {
   Flame,
   Calendar,
   Clock,
+  Mail,
 } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { sound } from '../../lib/audioSynth'
@@ -59,6 +60,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [submissionId, setSubmissionId] = useState('')
+  const [emailDeliveryStatus, setEmailDeliveryStatus] = useState<{ sent?: boolean; error?: string } | null>(null)
   const [showConfirmClose, setShowConfirmClose] = useState(false)
 
   // Check if user has entered significant data
@@ -199,6 +201,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
       if (result.success) {
         sound.playSuccess()
         setSubmissionId(result.id)
+        setEmailDeliveryStatus({ sent: result.emailSent, error: result.emailError })
         setIsSubmitted(true)
 
         // Celebration Confetti
@@ -230,6 +233,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
     sound.playClick()
     setShowConfirmClose(false)
     setIsSubmitted(false)
+    setEmailDeliveryStatus(null)
     setErrors({})
     setFormData({
       fullName: '',
@@ -335,7 +339,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
               </p>
 
               {/* Selected Division Chip */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#0E2A4D]/80 border border-[#70D7FF]/30 text-xs font-semibold text-white mb-8">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#0E2A4D]/80 border border-[#70D7FF]/30 text-xs font-semibold text-white mb-5">
                 {formData.castingDivision === 'vocal' ? (
                   <>
                     <Mic className="w-4 h-4 text-[#70D7FF]" />
@@ -351,6 +355,27 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, on
                     <Flame className="w-4 h-4 text-[#FFB45C]" />
                     <span>MẢNG CASTING: MÚA</span>
                   </>
+                )}
+              </div>
+
+              {/* Email Delivery Notification Banner */}
+              <div className="w-full max-w-lg mx-auto mb-7 p-3.5 sm:p-4 rounded-2xl bg-[#09172B] border border-[#70D7FF]/30 text-xs text-left shadow-[0_4px_25px_rgba(0,0,0,0.4)]">
+                <div className="flex items-center gap-2 font-bold text-[#70D7FF] mb-1.5 uppercase tracking-wide">
+                  <Mail className="w-4 h-4 text-[#70D7FF]" />
+                  <span>XÁC NHẬN HỘP THƯ EMAIL:</span>
+                </div>
+                {emailDeliveryStatus?.sent ? (
+                  <p className="text-[#34D399] leading-relaxed">
+                    ✅ Email xác nhận đăng ký &amp; thể lệ casting đã được tự động gửi đến <strong>{formData.email}</strong>. Vui lòng kiểm tra Hộp thư đến (hoặc hòm thư Spam/Quảng cáo)!
+                  </p>
+                ) : emailDeliveryStatus?.error ? (
+                  <p className="text-[#FFE082] leading-relaxed">
+                    📩 Đơn đăng ký đã lưu thành công! Email xác nhận đang được xử lý chuyển tiếp tới <strong>{formData.email}</strong>. Ban tổ chức sẽ liên hệ hỗ trợ bạn qua email/SĐT trước ngày casting.
+                  </p>
+                ) : (
+                  <p className="text-[#C9D9EC] leading-relaxed">
+                    📩 Hệ thống đã ghi nhận email <strong>{formData.email}</strong>. Email xác nhận và thể lệ casting đang được tự động chuyển phát tới hòm thư của bạn!
+                  </p>
                 )}
               </div>
 

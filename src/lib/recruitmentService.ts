@@ -1,4 +1,6 @@
 import { addClientApplication } from './clientStore'
+import { sendAutomaticRegistrationEmail } from './emailService'
+import { ApplicationItem } from './adminApi'
 
 export interface RecruitmentFormData {
   fullName: string
@@ -17,17 +19,21 @@ export interface SubmissionResponse {
   id: string
   submittedAt: string
   message: string
+  emailSent?: boolean
+  emailError?: string
 }
 
 /**
  * Clean submit abstraction for HMC Collaborator Casting.
  * Works seamlessly on static deployments (Netlify) via client storage
  * and connects to REST API/backend servers when available.
+ * Automatically dispatches confirmation email with rules & schedule to candidate.
  */
 export async function submitApplication(
   data: RecruitmentFormData
 ): Promise<SubmissionResponse> {
   const now = new Date().toISOString()
+  let createdApp: ApplicationItem | null = null
 
   // 1. Try server endpoint first
   try {
@@ -44,15 +50,28 @@ export async function submitApplication(
       const result = await res.json()
       if (result.success) {
         try {
-          addClientApplication(data)
+          createdApp = addClientApplication(data)
         } catch {
           // ignore
         }
+
+        // Tự động gửi email xác nhận cho thí sinh
+        let emailResult = { success: false, error: '' }
+        if (createdApp) {
+          try {
+            emailResult = await sendAutomaticRegistrationEmail(createdApp)
+          } catch (e: any) {
+            console.warn('Auto email dispatch error:', e)
+          }
+        }
+
         return {
           success: true,
           id: result.id,
           submittedAt: now,
           message: result.message || 'Đơn đăng ký đã được ghi nhận thành công!',
+          emailSent: emailResult.success,
+          emailError: emailResult.error,
         }
       }
     }
@@ -63,15 +82,27 @@ export async function submitApplication(
   // 2. Client-side storage fallback (Netlify)
   try {
     const newApp = addClientApplication(data)
+
+    // Tự động gửi email xác nhận cho thí sinh
+    let emailResult = { success: false, error: '' }
+    try {
+      emailResult = await sendAutomaticRegistrationEmail(newApp)
+    } catch (e: any) {
+      console.warn('Auto email dispatch error:', e)
+    }
+
     return {
       success: true,
       id: newApp.id,
       submittedAt: now,
       message: 'Đơn đăng ký của bạn đã được ghi nhận thành công!',
+      emailSent: emailResult.success,
+      emailError: emailResult.error,
     }
   } catch (err: any) {
     console.error('Submission request failed:', err)
     throw new Error(err.message || 'Chưa thể gửi đơn. Vui lòng thử lại.')
   }
 }
+
 
